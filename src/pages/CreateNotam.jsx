@@ -344,7 +344,7 @@ export default function CreateNotam() {
 
       {/* Hidden print template rendered at document root to avoid CSS layout interference */}
       {formData.jenisNotam !== 'NOTAM Cancel' && createPortal(
-        <div style={{ position: 'absolute', top: 0, left: 0, width: '800px', zIndex: -1000, opacity: 0, pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '750px', zIndex: -1000, opacity: 0, pointerEvents: 'none' }}>
           <PdfTemplate ref={printRef} formData={formData} user={user} />
         </div>,
         document.body

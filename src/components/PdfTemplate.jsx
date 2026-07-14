@@ -1,10 +1,14 @@
 import React, { forwardRef } from 'react';
 
+// Constant: printable width in px that maps to A4 content area (210mm - 30mm margins = 180mm)
+// At 96dpi, 180mm ≈ 680px. We use 680px to guarantee it fits inside html2canvas windowWidth of 700px.
+const PAGE_WIDTH = 680;
+
 const PdfTemplate = forwardRef(({ formData, user, formNo }, ref) => {
   const today = new Date();
   const monthRoman = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][today.getMonth()];
   const displayFormNo = formNo || `01/${monthRoman}/${today.getFullYear()}`;
-  
+
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
@@ -21,234 +25,308 @@ const PdfTemplate = forwardRef(({ formData, user, formNo }, ref) => {
   const seqNumber = displayFormNo.split('/')[0];
   const nomorKegiatan = `${dd}${mm}${yyyy}/SURABAYA/${seqNumber}`;
 
-  const borderStyle = '1px solid #9ca3af';
+  /* ── shared styles ── */
+  const border = '1px solid #9ca3af';
 
-  return (
-    <div ref={ref} style={{
-      width: '800px',
-      padding: '10px', // Prevent border clipping by html2canvas
-      backgroundColor: 'white',
-      color: 'black',
-      fontFamily: 'Arial, Helvetica, sans-serif',
-      fontSize: '11pt',
-      lineHeight: '1.4',
-      boxSizing: 'border-box'
-    }}>
-      {/* FORM 1 */}
-      <div>
-        {/* Header - Moved to top left, smaller logo */}
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
-          <div style={{ width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src="/logo.png" alt="Logo AirNav" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
-            <div style={{ display: 'none', width: '50px', height: '50px', backgroundColor: '#e2e8f0', borderRadius: '50%', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '8px' }}>
-              LOGO AirNav
-            </div>
-          </div>
-          <div style={{ marginLeft: '10px' }}>
-            <h2 style={{ margin: 0, fontSize: '11pt', fontWeight: 'bold' }}>AirNav Indonesia</h2>
-            <h3 style={{ margin: 0, fontSize: '10pt', fontWeight: 'bold' }}>SURABAYA</h3>
+  const cellBase = {
+    border,
+    padding: '5px 10px',
+    verticalAlign: 'top',
+    wordWrap: 'break-word',
+    overflowWrap: 'break-word',
+    wordBreak: 'break-word',
+  };
+
+  const pageStyle = {
+    width: `${PAGE_WIDTH}px`,
+    backgroundColor: 'white',
+    color: 'black',
+    fontFamily: 'Arial, Helvetica, sans-serif',
+    fontSize: '10pt',
+    lineHeight: '1.4',
+    boxSizing: 'border-box',
+  };
+
+  const tableStyle = {
+    width: '100%',
+    borderCollapse: 'collapse',
+    tableLayout: 'fixed',
+    border,
+  };
+
+  /* ── FORM 1 ── */
+  const renderForm1 = () => (
+    <div style={pageStyle}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+        <div style={{ width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <img
+            src="/logo.png"
+            alt="Logo AirNav"
+            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+            onError={(e) => { e.target.style.display = 'none'; if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex'; }}
+          />
+          <div style={{ display: 'none', width: '50px', height: '50px', backgroundColor: '#e2e8f0', borderRadius: '50%', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '8px' }}>
+            LOGO AirNav
           </div>
         </div>
+        <div style={{ marginLeft: '10px' }}>
+          <div style={{ margin: 0, fontSize: '11pt', fontWeight: 'bold' }}>AirNav Indonesia</div>
+          <div style={{ margin: 0, fontSize: '10pt', fontWeight: 'bold' }}>SURABAYA</div>
+        </div>
+      </div>
 
-        <table style={{ width: '99%', margin: '0 auto', borderCollapse: 'collapse', border: borderStyle, tableLayout: 'fixed' }}>
+      {/* Table */}
+      <table style={tableStyle}>
+        <colgroup>
+          <col style={{ width: '50%' }} />
+          <col style={{ width: '50%' }} />
+        </colgroup>
+        <tbody>
+          {/* Title */}
+          <tr>
+            <td colSpan={2} style={{ ...cellBase, padding: '10px', textAlign: 'center', backgroundColor: '#f9fafb' }}>
+              <strong style={{ fontSize: '11pt' }}>FORM PERMOHONAN PENERBITAN NOTAM</strong>
+            </td>
+          </tr>
+          {/* Form No */}
+          <tr>
+            <td colSpan={2} style={cellBase}>
+              Form no : {displayFormNo}
+            </td>
+          </tr>
+          {/* Kepada / Pemohon */}
+          <tr>
+            <td style={{ ...cellBase, padding: 0 }}>
+              <div style={{ padding: '5px 10px', borderBottom: border }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Kepada</div>
+                <div>Kepala Unit Pia Wilayah Surabaya</div>
+              </div>
+              <div style={{ padding: '5px 10px' }}>
+                <div style={{ marginTop: '5px' }}>cc. General Manager</div>
+                <div>Pusat Informasi Aeronautika</div>
+              </div>
+            </td>
+            <td style={cellBase}>
+              <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Pemohon</div>
+              <table style={{ borderCollapse: 'collapse', width: '100%', tableLayout: 'fixed' }}>
+                <tbody>
+                  <tr>
+                    <td style={{ width: '60px', padding: '2px 0', border: 'none', verticalAlign: 'top' }}>Nama</td>
+                    <td style={{ padding: '2px 0', border: 'none', wordBreak: 'break-word' }}>: {user?.name || 'IBNU HARGIYANTO'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ width: '60px', padding: '2px 0', border: 'none', verticalAlign: 'top' }}>Jabatan</td>
+                    <td style={{ padding: '2px 0', border: 'none', wordBreak: 'break-word' }}>: {user?.jabatan || 'MANAGER OPERASI APP TWR 2'}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+          {/* Jenis NOTAM */}
+          <tr>
+            <td colSpan={2} style={{ ...cellBase, padding: '10px' }}>
+              <div style={{ marginBottom: '5px' }}>Jenis NOTAM :</div>
+              <div style={{ display: 'flex', gap: '20px', paddingLeft: '10px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <div style={{ width: '14px', height: '14px', border, textAlign: 'center', lineHeight: '14px', marginRight: '6px', fontSize: '9px', flexShrink: 0 }}>
+                    {formData.jenisNotam === 'NOTAM New' ? 'V' : ''}
+                  </div>
+                  NOTAM New
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <div style={{ width: '14px', height: '14px', border, textAlign: 'center', lineHeight: '14px', marginRight: '6px', fontSize: '9px', flexShrink: 0 }}>
+                    {formData.jenisNotam === 'NOTAM Replace' ? 'V' : ''}
+                  </div>
+                  NOTAM Replace (Nomor)
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <div style={{ width: '14px', height: '14px', border, textAlign: 'center', lineHeight: '14px', marginRight: '6px', fontSize: '9px', flexShrink: 0 }}>
+                    {formData.jenisNotam === 'NOTAM Cancel' ? 'V' : ''}
+                  </div>
+                  NOTAM Cancel
+                </div>
+              </div>
+            </td>
+          </tr>
+          {/* Lokasi */}
+          <tr>
+            <td style={cellBase}>Lokasi</td>
+            <td style={cellBase}>{formData.lokasi}</td>
+          </tr>
+          {/* Waktu Mulai */}
+          <tr>
+            <td style={cellBase}>Waktu Mulai Pelaksanaan</td>
+            <td style={cellBase}>Tanggal : {formatDate(formData.waktuMulai)}</td>
+          </tr>
+          {/* Waktu Selesai */}
+          <tr>
+            <td style={cellBase}>Waktu Selesai Pelaksanaan</td>
+            <td style={cellBase}>Tanggal : {formatDate(formData.waktuSelesai)}</td>
+          </tr>
+          {/* Jadwal Spesifik */}
+          <tr>
+            <td style={cellBase}>Jadwal Spesifik (jika ada)</td>
+            <td style={{ ...cellBase, whiteSpace: 'pre-wrap' }}>{formData.jadwalSpesifik}</td>
+          </tr>
+          {/* Deskripsi */}
+          <tr>
+            <td colSpan={2} style={{ ...cellBase, padding: '10px' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Deskripsi Informasi Notam :</div>
+              <div style={{ whiteSpace: 'pre-wrap' }}>{formData.deskripsi}</div>
+            </td>
+          </tr>
+          {/* Dokumen Pendukung */}
+          <tr>
+            <td colSpan={2} style={cellBase}>
+              Dokumen Pendukung (jika ada)<br />
+              {formData.dokumenPendukung}
+            </td>
+          </tr>
+          {/* Tanda tangan */}
+          <tr>
+            <td style={{ ...cellBase, padding: '10px', textAlign: 'center' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '40px' }}>Pemohon</div>
+              <div style={{ textDecoration: 'underline' }}>{user?.name?.replace(' ', '') || 'IBNUHARGIYANTO'}</div>
+              <div style={{ marginTop: '10px' }}>Tanggal : {todayStr}</div>
+            </td>
+            <td style={{ ...cellBase, padding: '10px', textAlign: 'center', verticalAlign: 'top' }}>
+              <div style={{ fontWeight: 'bold' }}>Mengetahui INMC</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+
+  /* ── FORM 2 (Operational Assessment, only for NOTAM New) ── */
+  const renderForm2 = () => {
+    if (formData.jenisNotam !== 'NOTAM New') return null;
+
+    return (
+      <div style={{ ...pageStyle, pageBreakBefore: 'always', paddingTop: '10px' }}>
+        <table style={tableStyle}>
           <tbody>
-            <tr style={{ pageBreakInside: 'avoid' }}>
-              <td colSpan={2} style={{ border: borderStyle, padding: '10px', textAlign: 'center', backgroundColor: '#f9fafb' }}>
-                <h2 style={{ margin: 0, fontSize: '11pt', fontWeight: 'bold' }}>FORM PERMOHONAN PENERBITAN NOTAM</h2>
+            {/* Title */}
+            <tr>
+              <td colSpan={2} style={{ ...cellBase, padding: '10px', textAlign: 'center' }}>
+                <strong style={{ fontSize: '11pt' }}>OPERATIONAL ASSESMENT</strong>
+                <div style={{ marginTop: '3px', fontWeight: 'bold', fontSize: '11pt' }}>{formData.namaKegiatan || 'KEGIATAN MILITARY EXERCISE DI WAR11 DAN WAR1'}</div>
+                <div style={{ marginTop: '3px', fontWeight: 'bold', fontSize: '11pt' }}>NOMOR {nomorKegiatan}</div>
               </td>
             </tr>
-            <tr style={{ pageBreakInside: 'avoid' }}>
-              <td colSpan={2} style={{ border: borderStyle, padding: '5px 10px' }}>
-                Form no : {displayFormNo}
-              </td>
+            {/* Applicant */}
+            <tr>
+              <td colSpan={2} style={cellBase}>APPLICANT : AIRNAV SURABAYA</td>
             </tr>
-            <tr style={{ pageBreakInside: 'avoid' }}>
-              <td style={{ border: borderStyle, padding: '0', width: '50%', verticalAlign: 'top' }}>
-                <div style={{ padding: '5px 10px', borderBottom: borderStyle }}>
-                  <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Kepada</div>
-                  <div>Kepala Unit Pia Wilayah Surabaya</div>
-                </div>
-                <div style={{ padding: '5px 10px' }}>
-                  <div style={{ marginTop: '5px', fontWeight: 'normal' }}>cc. General Manager</div>
-                  <div>Pusat Informasi Aeronautika</div>
-                </div>
-              </td>
-              <td style={{ border: borderStyle, padding: '5px 10px', width: '50%', verticalAlign: 'top' }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Pemohon</div>
-                <div style={{ display: 'flex' }}>
-                  <div style={{ width: '60px' }}>Nama</div>
-                  <div>: {user?.name || 'IBNU HARGIYANTO'}</div>
-                </div>
-                <div style={{ display: 'flex', marginTop: '5px' }}>
-                  <div style={{ width: '60px' }}>Jabatan</div>
-                  <div>: {user?.jabatan || 'MANAGER OPERASI APP TWR 2'}</div>
-                </div>
-              </td>
+            {/* Reff Letter */}
+            <tr>
+              <td colSpan={2} style={cellBase}>REFF. LETTER : {formData.reffLetter}</td>
             </tr>
-            <tr style={{ pageBreakInside: 'avoid' }}>
-              <td colSpan={2} style={{ border: borderStyle, padding: '10px' }}>
-                <div style={{ marginBottom: '5px' }}>Jenis NOTAM :</div>
-                <div style={{ display: 'flex', gap: '30px', paddingLeft: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <div style={{ width: '16px', height: '16px', border: borderStyle, textAlign: 'center', lineHeight: '16px', marginRight: '8px', fontSize: '10px' }}>
-                      {formData.jenisNotam === 'NOTAM New' ? 'V' : ''}
-                    </div>
-                    NOTAM New
+            {/* Location */}
+            <tr>
+              <td colSpan={2} style={cellBase}>
+                LOCATION :
+                {formData.mapImage && (
+                  <div style={{ marginTop: '10px', textAlign: 'center' }}>
+                    <img src={formData.mapImage} alt="Map" style={{ maxWidth: '80%', maxHeight: '250px', objectFit: 'contain' }} />
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <div style={{ width: '16px', height: '16px', border: borderStyle, textAlign: 'center', lineHeight: '16px', marginRight: '8px', fontSize: '10px' }}>
-                      {formData.jenisNotam === 'NOTAM Replace' ? 'V' : ''}
-                    </div>
-                    NOTAM Replace (Nomor)
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <div style={{ width: '16px', height: '16px', border: borderStyle, textAlign: 'center', lineHeight: '16px', marginRight: '8px', fontSize: '10px' }}>
-                      {formData.jenisNotam === 'NOTAM Cancel' ? 'V' : ''}
-                    </div>
-                    NOTAM Cancel
-                  </div>
-                </div>
+                )}
               </td>
             </tr>
-            <tr style={{ pageBreakInside: 'avoid' }}>
-              <td style={{ border: borderStyle, padding: '5px 10px' }}>Lokasi</td>
-              <td style={{ border: borderStyle, padding: '5px 10px' }}>{formData.lokasi}</td>
+            {/* Altitude */}
+            <tr>
+              <td colSpan={2} style={cellBase}>ALTITUDE : {formData.altitude}</td>
             </tr>
-            <tr style={{ pageBreakInside: 'avoid' }}>
-              <td style={{ border: borderStyle, padding: '5px 10px' }}>Waktu Mulai Pelaksanaan</td>
-              <td style={{ border: borderStyle, padding: '5px 10px' }}>Tanggal : {formatDate(formData.waktuMulai)}</td>
-            </tr>
-            <tr style={{ pageBreakInside: 'avoid' }}>
-              <td style={{ border: borderStyle, padding: '5px 10px' }}>Waktu Selesai Pelaksanaan</td>
-              <td style={{ border: borderStyle, padding: '5px 10px' }}>Tanggal : {formatDate(formData.waktuSelesai)}</td>
-            </tr>
-            <tr style={{ pageBreakInside: 'avoid' }}>
-              <td style={{ border: borderStyle, padding: '5px 10px' }}>Jadwal Spesifik (jika ada)</td>
-              <td style={{ border: borderStyle, padding: '5px 10px', whiteSpace: 'pre-wrap' }}>{formData.jadwalSpesifik}</td>
-            </tr>
-            <tr style={{ pageBreakInside: 'avoid' }}>
-              <td colSpan={2} style={{ border: borderStyle, padding: '10px' }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Deskripsi Informasi Notam :</div>
-                <div style={{ whiteSpace: 'pre-wrap' }}>{formData.deskripsi}</div>
+            {/* Time */}
+            <tr>
+              <td colSpan={2} style={cellBase}>
+                <div>TIME (UTC)</div>
+                <table style={{ borderCollapse: 'collapse', border: 'none' }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ width: '80px', padding: '2px 0', border: 'none' }}>FROM</td>
+                      <td style={{ padding: '2px 0', border: 'none' }}>: {formData.waktuMulai ? new Date(formData.waktuMulai).toISOString().substring(11, 16).replace(':', '.') : ''}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ width: '80px', padding: '2px 0', border: 'none' }}>TO</td>
+                      <td style={{ padding: '2px 0', border: 'none' }}>: {formData.waktuSelesai ? new Date(formData.waktuSelesai).toISOString().substring(11, 16).replace(':', '.') : ''}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ width: '80px', padding: '2px 0', border: 'none' }}>SCHEDULE</td>
+                      <td style={{ padding: '2px 0', border: 'none' }}>: {formData.waktuMulai ? new Date(formData.waktuMulai).getDate().toString().padStart(2, '0') : ''} - {formData.waktuSelesai ? new Date(formData.waktuSelesai).getDate().toString().padStart(2, '0') : ''} {formData.waktuMulai ? ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][new Date(formData.waktuMulai).getMonth()] : ''} {formData.waktuMulai ? new Date(formData.waktuMulai).getFullYear() : ''}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </td>
             </tr>
-            <tr style={{ pageBreakInside: 'avoid' }}>
-              <td colSpan={2} style={{ border: borderStyle, padding: '5px 10px' }}>
-                Dokumen Pendukung (jika ada)<br/>
-                {formData.dokumenPendukung}
+            {/* Operational Effect */}
+            <tr>
+              <td colSpan={2} style={cellBase}>
+                <div style={{ fontWeight: 'bold' }}>OPERATIONAL EFFECT &amp; CONDITION :</div>
+                <div style={{ whiteSpace: 'pre-wrap', marginTop: '5px' }}>{formData.operationalEffect}</div>
               </td>
             </tr>
-            <tr style={{ pageBreakInside: 'avoid' }}>
-              <td style={{ border: borderStyle, padding: '10px', textAlign: 'center', width: '50%' }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '40px' }}>Pemohon</div>
-                <div style={{ textDecoration: 'underline' }}>{user?.name?.replace(' ', '') || 'IBNUHARGIYANTO'}</div>
-                <div style={{ marginTop: '10px' }}>Tanggal : {todayStr}</div>
+            {/* Mitigation */}
+            <tr>
+              <td colSpan={2} style={cellBase}>
+                <div style={{ fontWeight: 'bold' }}>MITIGATION :</div>
+                <div style={{ whiteSpace: 'pre-wrap', marginTop: '5px' }}>{formData.mitigation}</div>
               </td>
-              <td style={{ border: borderStyle, padding: '10px', textAlign: 'center', width: '50%', verticalAlign: 'top' }}>
-                <div style={{ fontWeight: 'bold' }}>Mengetahui INMC</div>
+            </tr>
+            {/* Procedure */}
+            <tr>
+              <td colSpan={2} style={cellBase}>
+                <div style={{ fontWeight: 'bold' }}>PROCEDURE &amp; CAPACITY :</div>
+                <div style={{ whiteSpace: 'pre-wrap', marginTop: '5px' }}>{formData.procedureCapacity}</div>
+              </td>
+            </tr>
+            {/* Mitigasi Operasional */}
+            <tr>
+              <td colSpan={2} style={cellBase}>
+                <div style={{ fontWeight: 'bold' }}>MITIGASI OPERASIONAL :</div>
+                <div style={{ whiteSpace: 'pre-wrap', marginTop: '5px' }}>{formData.mitigasiOperasional}</div>
+              </td>
+            </tr>
+            {/* Conclusion */}
+            <tr>
+              <td colSpan={2} style={cellBase}>
+                <div style={{ fontWeight: 'bold' }}>CONCLUSION :</div>
+                <div style={{ whiteSpace: 'pre-wrap', marginTop: '5px' }}>{formData.conclusion}</div>
+              </td>
+            </tr>
+            {/* Signature */}
+            <tr>
+              <td colSpan={2} style={{ ...cellBase, padding: '10px', textAlign: 'center' }}>
+                <div style={{ marginBottom: '15px' }}>ATS UNIT INVOLVED :</div>
+                <div>{user?.jabatan?.split('APP')[0] || 'Manager Operasi Surabaya'}</div>
+                <div style={{ height: '40px' }}></div>
+                <div style={{ textDecoration: 'underline' }}>{user?.name || 'IBNU HARGIYANTO'}</div>
+                <div>{user?.jabatan || 'Manager Operasi APP TWR 2'}</div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+    );
+  };
 
-      {/* FORM 2 */}
-      {formData.jenisNotam === 'NOTAM New' && (
-        <div style={{ pageBreakBefore: 'always', paddingTop: '10px' }}>
-          <table style={{ width: '99%', margin: '0 auto', borderCollapse: 'collapse', border: borderStyle, tableLayout: 'fixed' }}>
-            <tbody>
-              <tr style={{ pageBreakInside: 'avoid' }}>
-                <td colSpan={2} style={{ border: borderStyle, padding: '10px', textAlign: 'center' }}>
-                  <h2 style={{ margin: 0, fontSize: '11pt', fontWeight: 'bold' }}>OPERATIONAL ASSESMENT</h2>
-                  <h2 style={{ margin: 0, marginTop: '3px', fontSize: '11pt', fontWeight: 'bold' }}>{formData.namaKegiatan || 'KEGIATAN MILITARY EXERCISE DI WAR11 DAN WAR1'}</h2>
-                  <h2 style={{ margin: 0, marginTop: '3px', fontSize: '11pt', fontWeight: 'bold' }}>NOMOR {nomorKegiatan}</h2>
-                </td>
-              </tr>
-              <tr style={{ pageBreakInside: 'avoid' }}>
-                <td colSpan={2} style={{ border: borderStyle, padding: '5px 10px' }}>
-                  APPLICANT : AIRNAV SURABAYA
-                </td>
-              </tr>
-              <tr style={{ pageBreakInside: 'avoid' }}>
-                <td colSpan={2} style={{ border: borderStyle, padding: '5px 10px' }}>
-                  REFF. LETTER : {formData.reffLetter}
-                </td>
-              </tr>
-              <tr style={{ pageBreakInside: 'avoid' }}>
-                <td colSpan={2} style={{ border: borderStyle, padding: '5px 10px' }}>
-                  LOCATION :
-                  {formData.mapImage && (
-                    <div style={{ marginTop: '10px', textAlign: 'center' }}>
-                      <img src={formData.mapImage} alt="Map" style={{ maxWidth: '80%', maxHeight: '250px', objectFit: 'contain' }} />
-                    </div>
-                  )}
-                </td>
-              </tr>
-              <tr style={{ pageBreakInside: 'avoid' }}>
-                <td colSpan={2} style={{ border: borderStyle, padding: '5px 10px' }}>
-                  ALTITUDE : {formData.altitude}
-                </td>
-              </tr>
-              <tr style={{ pageBreakInside: 'avoid' }}>
-                <td colSpan={2} style={{ border: borderStyle, padding: '5px 10px' }}>
-                  <div>TIME (UTC)</div>
-                  <div style={{ display: 'flex' }}>
-                    <div style={{ width: '100px' }}>FROM</div>
-                    <div>: {formData.waktuMulai ? new Date(formData.waktuMulai).toISOString().substring(11, 16).replace(':', '.') : ''}</div>
-                  </div>
-                  <div style={{ display: 'flex' }}>
-                    <div style={{ width: '100px' }}>TO</div>
-                    <div>: {formData.waktuSelesai ? new Date(formData.waktuSelesai).toISOString().substring(11, 16).replace(':', '.') : ''}</div>
-                  </div>
-                  <div style={{ display: 'flex' }}>
-                    <div style={{ width: '100px' }}>SCHEDULE</div>
-                    <div>: {formData.waktuMulai ? new Date(formData.waktuMulai).getDate().toString().padStart(2, '0') : ''} - {formData.waktuSelesai ? new Date(formData.waktuSelesai).getDate().toString().padStart(2, '0') : ''} {formData.waktuMulai ? ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][new Date(formData.waktuMulai).getMonth()] : ''} {formData.waktuMulai ? new Date(formData.waktuMulai).getFullYear() : ''}</div>
-                  </div>
-                </td>
-              </tr>
-              <tr style={{ pageBreakInside: 'avoid' }}>
-                <td colSpan={2} style={{ border: borderStyle, padding: '5px 10px' }}>
-                  <div style={{ fontWeight: 'bold' }}>OPERATIONAL EFFECT & CONDITION :</div>
-                  <div style={{ whiteSpace: 'pre-wrap', marginTop: '5px' }}>{formData.operationalEffect}</div>
-                </td>
-              </tr>
-              <tr style={{ pageBreakInside: 'avoid' }}>
-                <td colSpan={2} style={{ border: borderStyle, padding: '5px 10px' }}>
-                  <div style={{ fontWeight: 'bold' }}>MITIGATION :</div>
-                  <div style={{ whiteSpace: 'pre-wrap', marginTop: '5px' }}>{formData.mitigation}</div>
-                </td>
-              </tr>
-              <tr style={{ pageBreakInside: 'avoid' }}>
-                <td colSpan={2} style={{ border: borderStyle, padding: '5px 10px' }}>
-                  <div style={{ fontWeight: 'bold' }}>PROCEDURE & CAPACITY :</div>
-                  <div style={{ whiteSpace: 'pre-wrap', marginTop: '5px' }}>{formData.procedureCapacity}</div>
-                </td>
-              </tr>
-              <tr style={{ pageBreakInside: 'avoid' }}>
-                <td colSpan={2} style={{ border: borderStyle, padding: '5px 10px' }}>
-                  <div style={{ fontWeight: 'bold' }}>MITIGASI OPERASIONAL :</div>
-                  <div style={{ whiteSpace: 'pre-wrap', marginTop: '5px' }}>{formData.mitigasiOperasional}</div>
-                </td>
-              </tr>
-              <tr style={{ pageBreakInside: 'avoid' }}>
-                <td colSpan={2} style={{ border: borderStyle, padding: '5px 10px' }}>
-                  <div style={{ fontWeight: 'bold' }}>CONCLUSION :</div>
-                  <div style={{ whiteSpace: 'pre-wrap', marginTop: '5px' }}>{formData.conclusion}</div>
-                </td>
-              </tr>
-              <tr style={{ pageBreakInside: 'avoid' }}>
-                <td colSpan={2} style={{ border: borderStyle, padding: '10px', textAlign: 'center' }}>
-                  <div style={{ marginBottom: '15px' }}>ATS UNIT INVOLVED :</div>
-                  <div>{user?.jabatan?.split('APP')[0] || 'Manager Operasi Surabaya'}</div>
-                  <div style={{ height: '40px' }}></div>
-                  <div style={{ textDecoration: 'underline' }}>{user?.name || 'IBNU HARGIYANTO'}</div>
-                  <div>{user?.jabatan || 'Manager Operasi APP TWR 2'}</div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
+  return (
+    <div ref={ref} className="pdf-template-root" style={{
+      width: `${PAGE_WIDTH + 40}px`,
+      paddingRight: '40px',
+      backgroundColor: 'white',
+    }}>
+      <style>{`
+        .pdf-template-root,
+        .pdf-template-root *,
+        .pdf-template-root *::before,
+        .pdf-template-root *::after {
+          box-sizing: content-box !important;
+        }
+      `}</style>
+      {renderForm1()}
+      {renderForm2()}
     </div>
   );
 });

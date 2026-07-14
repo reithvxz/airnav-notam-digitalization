@@ -26,7 +26,7 @@ export default function PdfViewerModal({ notam, onClose }) {
         margin:       [10, 15], // [top/bottom, left/right] in mm
         filename:     'preview.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, windowWidth: 800 },
+        html2canvas:  { scale: 2, useCORS: true, windowWidth: 750 },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
       };
@@ -78,7 +78,7 @@ export default function PdfViewerModal({ notam, onClose }) {
       </div>
 
       {createPortal(
-        <div style={{ position: 'absolute', top: 0, left: 0, width: '800px', zIndex: -1000, opacity: 0, pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '750px', zIndex: -1000, opacity: 0, pointerEvents: 'none' }}>
           <PdfTemplate ref={printRef} formData={notam.formData} user={{name: notam.creatorName || notam.creator, jabatan: notam.creatorJabatan}} formNo={notam.formNo} />
         </div>,
         document.body

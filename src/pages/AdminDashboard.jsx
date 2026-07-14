@@ -1,55 +1,172 @@
 import { useState, useMemo } from 'react';
 import { useNotams } from '../context/NotamContext';
 import { Link } from 'react-router-dom';
-import { Plus, FileText, CheckCircle, Clock } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Plus, FileText, CheckCircle, Clock, TrendingUp, Activity, MapPin, Calendar } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import PdfViewerModal from '../components/PdfViewerModal';
+
+const PIE_COLORS = ['#3b82f6', '#f59e0b', '#ef4444'];
+
+function timeAgo(dateStr) {
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return 'Baru saja';
+  if (diffMins < 60) return `${diffMins} menit lalu`;
+  const diffHrs = Math.floor(diffMins / 60);
+  if (diffHrs < 24) return `${diffHrs} jam lalu`;
+  const diffDays = Math.floor(diffHrs / 24);
+  if (diffDays < 30) return `${diffDays} hari lalu`;
+  const diffMonths = Math.floor(diffDays / 30);
+  return `${diffMonths} bulan lalu`;
+}
 
 export default function AdminDashboard() {
   const { notams } = useNotams();
-  const [filter, setFilter] = useState('all'); // 'all', 'active', 'incoming'
+  const [filter, setFilter] = useState('all');
   const [selectedNotam, setSelectedNotam] = useState(null);
 
   const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
 
-  // Process data
-  const { activeNotams, incomingNotams, filteredNotams, chartData } = useMemo(() => {
+  const { activeNotams, incomingNotams, completedThisMonth, thisMonthCount, filteredNotams, chartData, pieData, recentActivity } = useMemo(() => {
     let active = [];
     let incoming = [];
+    let completedMonth = 0;
+    let monthCount = 0;
 
-    // Monthly data for chart (using current year)
-    const currentYear = now.getFullYear();
     const monthsCount = Array(12).fill(0);
 
+    // Pie data counters
+    let newCount = 0, replaceCount = 0, cancelCount = 0;
+
     notams.forEach(notam => {
-      const startTime = new Date(notam.formData.waktuMulai);
+      const formData = notam.formData || {};
+      const startTime = new Date(formData.waktuMulai || notam.waktuMulai || notam.createdAt);
+      const endTime = new Date(formData.waktuSelesai || notam.waktuSelesai || notam.createdAt);
+      const createdDate = new Date(notam.createdAt);
+
       if (startTime <= now) {
         active.push(notam);
       } else {
         incoming.push(notam);
       }
 
-      const notamDate = new Date(notam.createdAt);
-      if (notamDate.getFullYear() === currentYear) {
-        monthsCount[notamDate.getMonth()]++;
+      // Completed this month
+      if (endTime < now && createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear) {
+        completedMonth++;
       }
+
+      // Created this month
+      if (createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear) {
+        monthCount++;
+      }
+
+      // Chart data
+      if (createdDate.getFullYear() === currentYear) {
+        monthsCount[createdDate.getMonth()]++;
+      }
+
+      // Pie data
+      const jenisNotam = formData.jenisNotam || notam.jenis || '';
+      if (jenisNotam === 'NOTAM New') newCount++;
+      else if (jenisNotam === 'NOTAM Replace') replaceCount++;
+      else if (jenisNotam === 'NOTAM Cancel') cancelCount++;
     });
 
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
     const chart = monthsCount.map((count, index) => ({ name: monthNames[index], notams: count }));
+
+    const pie = [
+      { name: 'NOTAM New', value: newCount },
+      { name: 'Replace', value: replaceCount },
+      { name: 'Cancel', value: cancelCount },
+    ].filter(d => d.value > 0);
 
     let filtered = notams;
     if (filter === 'active') filtered = active;
     if (filter === 'incoming') filtered = incoming;
-
-    // Sort by created at descending
     filtered = [...filtered].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-    return { activeNotams: active, incomingNotams: incoming, filteredNotams: filtered, chartData: chart };
-  }, [notams, filter, now]);
+    // Recent activity: last 6
+    const recent = [...notams].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 6);
+
+    return {
+      activeNotams: active,
+      incomingNotams: incoming,
+      completedThisMonth: completedMonth,
+      thisMonthCount: monthCount,
+      filteredNotams: filtered,
+      chartData: chart,
+      pieData: pie,
+      recentActivity: recent
+    };
+  }, [notams, filter, now, currentMonth, currentYear]);
+
+  const statCards = [
+    {
+      label: 'Total NOTAM',
+      value: notams.length,
+      icon: FileText,
+      iconBg: '#eff6ff',
+      iconColor: '#3b82f6',
+      borderColor: '#3b82f6',
+      filterKey: 'all',
+    },
+    {
+      label: 'NOTAM Aktif',
+      value: activeNotams.length,
+      icon: CheckCircle,
+      iconBg: '#d1fae5',
+      iconColor: '#059669',
+      borderColor: '#059669',
+      filterKey: 'active',
+      subtitle: 'Sudah terbit'
+    },
+    {
+      label: 'Incoming',
+      value: incomingNotams.length,
+      icon: Clock,
+      iconBg: '#fef3c7',
+      iconColor: '#d97706',
+      borderColor: '#d97706',
+      filterKey: 'incoming',
+      subtitle: 'Akan terbit'
+    },
+    {
+      label: 'Bulan Ini',
+      value: thisMonthCount,
+      icon: TrendingUp,
+      iconBg: '#ede9fe',
+      iconColor: '#7c3aed',
+      borderColor: '#7c3aed',
+      subtitle: `${completedThisMonth} selesai`
+    },
+  ];
+
+  const CustomTooltip = ({ active: isActive, payload, label }) => {
+    if (isActive && payload && payload.length) {
+      return (
+        <div style={{
+          backgroundColor: 'white',
+          padding: '12px 16px',
+          borderRadius: '10px',
+          border: 'none',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+        }}>
+          <p style={{ margin: 0, fontWeight: 600, color: '#0f172a' }}>{label}</p>
+          <p style={{ margin: '4px 0 0', color: '#3b82f6', fontWeight: 500 }}>{payload[0].value} NOTAM</p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div>
+      {/* Header */}
       <div className="page-header">
         <div>
           <h1 className="page-title">Dashboard Admin</h1>
@@ -61,117 +178,260 @@ export default function AdminDashboard() {
         </Link>
       </div>
 
-      <div className="stat-cards">
-        <div 
-          className="stat-card" 
-          onClick={() => setFilter('all')} 
-          style={{ cursor: 'pointer', border: filter === 'all' ? '2px solid var(--primary)' : '1px solid #e2e8f0', transform: filter === 'all' ? 'scale(1.02)' : 'scale(1)', transition: 'all 0.2s' }}
-        >
-          <div className="flex justify-between items-center mb-4">
-            <span className="stat-title">Total NOTAM Keseluruhan</span>
-            <div style={{ padding: '0.5rem', backgroundColor: '#eff6ff', borderRadius: '8px', color: '#1d4ed8' }}>
-              <FileText size={20} />
+      {/* Stat Cards */}
+      <div className="stat-cards" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        {statCards.map((card) => {
+          const Icon = card.icon;
+          const isSelected = card.filterKey && filter === card.filterKey;
+          return (
+            <div
+              key={card.label}
+              className="stat-card"
+              onClick={() => card.filterKey && setFilter(card.filterKey)}
+              style={{
+                cursor: card.filterKey ? 'pointer' : 'default',
+                border: isSelected ? `2px solid ${card.borderColor}` : '1px solid #e2e8f0',
+                transform: isSelected ? 'scale(1.03)' : 'scale(1)',
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <span className="stat-title">{card.label}</span>
+                <div style={{
+                  padding: '0.5rem',
+                  backgroundColor: card.iconBg,
+                  borderRadius: '10px',
+                  color: card.iconColor,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Icon size={20} />
+                </div>
+              </div>
+              <span className="stat-value">{card.value}</span>
+              {card.subtitle && (
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>{card.subtitle}</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Charts Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+        {/* Bar Chart */}
+        <div className="card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Statistik Penerbitan</h3>
+              <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Tahun {currentYear}</p>
+            </div>
+            <div className="badge badge-blue" style={{ padding: '0.3rem 0.7rem' }}>
+              <Calendar size={14} style={{ marginRight: '4px' }} /> Bulanan
             </div>
           </div>
-          <span className="stat-value">{notams.length}</span>
+          <div style={{ width: '100%', height: 260 }}>
+            <ResponsiveContainer>
+              <BarChart data={chartData.slice(0, currentMonth + 1)} barSize={28}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} allowDecimals={false} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59,130,246,0.06)' }} />
+                <Bar dataKey="notams" fill="url(#barGradient)" radius={[6, 6, 0, 0]} />
+                <defs>
+                  <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#3b82f6" />
+                    <stop offset="100%" stopColor="#1d4ed8" />
+                  </linearGradient>
+                </defs>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-        
-        <div 
-          className="stat-card"
-          onClick={() => setFilter('active')} 
-          style={{ cursor: 'pointer', border: filter === 'active' ? '2px solid #059669' : '1px solid #e2e8f0', transform: filter === 'active' ? 'scale(1.02)' : 'scale(1)', transition: 'all 0.2s' }}
-        >
-          <div className="flex justify-between items-center mb-4">
-            <span className="stat-title">NOTAM Aktif (Telah Terbit)</span>
-            <div style={{ padding: '0.5rem', backgroundColor: '#d1fae5', borderRadius: '8px', color: '#059669' }}>
-              <CheckCircle size={20} />
-            </div>
+
+        {/* Pie Chart */}
+        <div className="card">
+          <div style={{ marginBottom: '1rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Distribusi Jenis</h3>
+            <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Semua NOTAM</p>
           </div>
-          <span className="stat-value">{activeNotams.length}</span>
-        </div>
-        
-        <div 
-          className="stat-card"
-          onClick={() => setFilter('incoming')} 
-          style={{ cursor: 'pointer', border: filter === 'incoming' ? '2px solid #d97706' : '1px solid #e2e8f0', transform: filter === 'incoming' ? 'scale(1.02)' : 'scale(1)', transition: 'all 0.2s' }}
-        >
-          <div className="flex justify-between items-center mb-4">
-            <span className="stat-title">Akan Datang (Incoming)</span>
-            <div style={{ padding: '0.5rem', backgroundColor: '#fef3c7', borderRadius: '8px', color: '#d97706' }}>
-              <Clock size={20} />
-            </div>
+          <div style={{ width: '100%', height: 260, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {pieData.length > 0 ? (
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="45%"
+                    innerRadius={55}
+                    outerRadius={85}
+                    paddingAngle={4}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Legend
+                    verticalAlign="bottom"
+                    iconType="circle"
+                    iconSize={8}
+                    wrapperStyle={{ fontSize: '12px', color: '#64748b' }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: '10px',
+                      border: 'none',
+                      boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                      padding: '10px 14px',
+                    }}
+                    formatter={(value, name) => [`${value} NOTAM`, name]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <p style={{ color: 'var(--text-muted)' }}>Belum ada data</p>
+            )}
           </div>
-          <span className="stat-value">{incomingNotams.length}</span>
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: '2rem' }}>
-        <h3 style={{ marginBottom: '1.5rem', fontSize: '1.25rem' }}>Statistik Penerbitan NOTAM ({now.getFullYear()})</h3>
-        <div style={{ width: '100%', height: 300 }}>
-          <ResponsiveContainer>
-            <BarChart data={chartData.slice(0, now.getMonth() + 1)}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} />
-              <YAxis axisLine={false} tickLine={false} />
-              <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
-              <Bar dataKey="notams" fill="var(--primary)" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+      {/* Activity + Table Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem' }}>
+        {/* Recent Activity */}
+        <div className="card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+            <Activity size={18} color="var(--primary)" />
+            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Aktivitas Terbaru</h3>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+            {recentActivity.map((notam, idx) => {
+              const formData = notam.formData || {};
+              const jenisNotam = formData.jenisNotam || notam.jenis || '';
+              const lokasi = formData.lokasi || notam.lokasi || '';
+              const isNew = jenisNotam === 'NOTAM New';
+              const isReplace = jenisNotam === 'NOTAM Replace';
+              const dotColor = isNew ? '#3b82f6' : isReplace ? '#f59e0b' : '#ef4444';
+              return (
+                <div
+                  key={notam.id}
+                  onClick={() => setSelectedNotam(notam)}
+                  style={{
+                    display: 'flex',
+                    gap: '12px',
+                    padding: '12px 0',
+                    borderBottom: idx < recentActivity.length - 1 ? '1px solid #f1f5f9' : 'none',
+                    cursor: 'pointer',
+                    transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  {/* Timeline dot */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '4px' }}>
+                    <div style={{
+                      width: '10px', height: '10px',
+                      borderRadius: '50%',
+                      backgroundColor: dotColor,
+                      flexShrink: 0,
+                    }} />
+                    {idx < recentActivity.length - 1 && (
+                      <div style={{ width: '2px', flex: 1, backgroundColor: '#e2e8f0', marginTop: '4px' }} />
+                    )}
+                  </div>
+                  {/* Content */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '8px' }}>
+                      <span style={{ fontWeight: 600, fontSize: '0.85rem', color: '#0f172a' }}>{notam.formNo}</span>
+                      <span className={`badge ${isNew ? 'badge-blue' : isReplace ? 'badge-yellow' : 'badge-red'}`} style={{ fontSize: '0.65rem', padding: '2px 6px', flexShrink: 0 }}>
+                        {jenisNotam.replace('NOTAM ', '')}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                      <MapPin size={11} color="#94a3b8" />
+                      <span style={{ fontSize: '0.78rem', color: '#64748b' }}>{lokasi}</span>
+                    </div>
+                    <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px', display: 'block' }}>{timeAgo(notam.createdAt)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
 
-      <div className="card">
-        <h3 style={{ marginBottom: '1.5rem', fontSize: '1.25rem' }}>
-          {filter === 'all' ? 'NOTAM Terbaru' : filter === 'active' ? 'NOTAM Aktif' : 'NOTAM Incoming'}
-        </h3>
-        
-        {filteredNotams.length === 0 ? (
-          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-            Belum ada NOTAM pada kategori ini.
+        {/* Table */}
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>
+              {filter === 'all' ? 'Semua NOTAM' : filter === 'active' ? 'NOTAM Aktif' : 'NOTAM Incoming'}
+            </h3>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{filteredNotams.length} dokumen</span>
           </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>No Form</th>
-                  <th>Jenis NOTAM</th>
-                  <th>Lokasi</th>
-                  <th>Waktu Mulai (UTC)</th>
-                  <th>Waktu Selesai (UTC)</th>
-                  <th>Status</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredNotams.map((notam) => {
-                  const startTime = new Date(notam.formData.waktuMulai);
-                  const isActive = startTime <= now;
-                  
-                  return (
-                    <tr key={notam.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedNotam(notam)}>
-                      <td style={{ fontWeight: 500 }}>{notam.formNo}</td>
-                      <td>{notam.formData.jenisNotam}</td>
-                      <td>{notam.formData.lokasi}</td>
-                      <td>{notam.formData.waktuMulai.replace('T', ' ')}</td>
-                      <td>{notam.formData.waktuSelesai.replace('T', ' ')}</td>
-                      <td>
-                        <span className={`badge ${isActive ? 'badge-green' : 'badge-yellow'}`}>
-                          {isActive ? 'Terbit' : 'Incoming'}
-                        </span>
-                      </td>
-                      <td>
-                        <button className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={(e) => { e.stopPropagation(); setSelectedNotam(notam); }}>
-                          Lihat PDF
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+
+          {filteredNotams.length === 0 ? (
+            <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+              <FileText size={40} style={{ opacity: 0.15, marginBottom: '0.5rem' }} />
+              <p>Belum ada NOTAM pada kategori ini.</p>
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto', maxHeight: '420px', overflowY: 'auto' }}>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>No Form</th>
+                    <th>Jenis</th>
+                    <th>Lokasi</th>
+                    <th>Waktu Mulai</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredNotams.map((notam) => {
+                    const formData = notam.formData || {};
+                    const jenisNotam = formData.jenisNotam || notam.jenis || '';
+                    const lokasi = formData.lokasi || notam.lokasi || '';
+                    const waktuMulai = formData.waktuMulai || notam.waktuMulai || notam.createdAt;
+                    const startTime = new Date(waktuMulai);
+                    const isActive = startTime <= now;
+
+                    return (
+                      <tr key={notam.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedNotam(notam)}>
+                        <td style={{ fontWeight: 600, fontSize: '0.9rem' }}>{notam.formNo}</td>
+                        <td>
+                          <span className={`badge ${jenisNotam === 'NOTAM New' ? 'badge-blue' : jenisNotam === 'NOTAM Replace' ? 'badge-yellow' : 'badge-red'}`}
+                            style={{ fontSize: '0.72rem' }}>
+                            {jenisNotam.replace('NOTAM ', '')}
+                          </span>
+                        </td>
+                        <td style={{ fontSize: '0.88rem' }}>{lokasi}</td>
+                        <td style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                          {waktuMulai.replace('T', ' ')}
+                        </td>
+                        <td>
+                          <span className={`badge ${isActive ? 'badge-green' : 'badge-yellow'}`}>
+                            {isActive ? 'Terbit' : 'Incoming'}
+                          </span>
+                        </td>
+                        <td>
+                          <button
+                            className="btn btn-secondary"
+                            style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
+                            onClick={(e) => { e.stopPropagation(); setSelectedNotam(notam); }}
+                          >
+                            Lihat PDF
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
 
       {selectedNotam && (
