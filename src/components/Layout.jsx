@@ -71,11 +71,13 @@ export default function Layout() {
     }
   };
 
+  const isSuperAdmin = ['DY', 'IB', 'YD', 'AY', 'IW'].includes(user.initial);
+
   const navItems = user.role === 'admin' 
     ? [
         { path: '/admin/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
         { path: '/admin/create-notam', label: 'Buat NOTAM', icon: <FilePlus size={20} /> },
-        { path: '/admin/accounts', label: 'Manajemen Akun', icon: <Users size={20} /> },
+        ...(isSuperAdmin ? [{ path: '/admin/accounts', label: 'Manajemen Akun', icon: <Users size={20} /> }] : []),
       ]
     : [
         { path: '/employee/dashboard', label: 'Daftar NOTAM', icon: <FileText size={20} /> },

@@ -9,12 +9,21 @@ import CreateNotam from './pages/CreateNotam';
 import AccountManagement from './pages/AccountManagement';
 
 // Protected Route Component
-const ProtectedRoute = ({ children, allowedRole }) => {
+const ProtectedRoute = ({ children, allowedRole, requireSuperAdmin }) => {
   const { user } = useAuth();
   if (!user) return <Navigate to="/" />;
+  
   if (allowedRole && user.role !== allowedRole) {
     return <Navigate to={user.role === 'admin' ? '/admin/dashboard' : '/employee/dashboard'} />;
   }
+  
+  if (requireSuperAdmin) {
+    const isSuperAdmin = ['DY', 'IB', 'YD', 'AY', 'IW'].includes(user.initial);
+    if (!isSuperAdmin) {
+      return <Navigate to="/admin/dashboard" />;
+    }
+  }
+  
   return children;
 };
 
@@ -43,7 +52,7 @@ function AppRoutes() {
         <Route 
           path="/admin/accounts" 
           element={
-            <ProtectedRoute allowedRole="admin">
+            <ProtectedRoute allowedRole="admin" requireSuperAdmin={true}>
               <AccountManagement />
             </ProtectedRoute>
           } 
