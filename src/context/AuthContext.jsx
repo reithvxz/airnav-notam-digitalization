@@ -13,9 +13,26 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const login = (userData) => {
-    setUser(userData);
-    localStorage.setItem('notam_user', JSON.stringify(userData));
+  const login = async (username, password) => {
+    try {
+      const response = await fetch('http://localhost:3000/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setUser(data.user);
+        localStorage.setItem('notam_user', JSON.stringify(data.user));
+        return { success: true, role: data.user.role };
+      }
+      return { success: false };
+    } catch (err) {
+      console.error("Login error:", err);
+      return { success: false };
+    }
   };
 
   const logout = () => {

@@ -5,7 +5,7 @@ import { Plus, FileText, CheckCircle, Clock, TrendingUp, Activity, MapPin, Calen
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import PdfViewerModal from '../components/PdfViewerModal';
 
-const PIE_COLORS = ['#3b82f6', '#f59e0b', '#ef4444'];
+const PIE_COLORS = ['#3b82f6', '#f59e0b', '#ef4444', '#64748b'];
 
 function timeAgo(dateStr) {
   const now = new Date();
@@ -42,7 +42,10 @@ export default function AdminDashboard() {
     const monthsCount = Array(12).fill(0);
 
     // Pie data counters
-    let newCount = 0, replaceCount = 0, cancelCount = 0;
+    let newCount = 0;
+    let replaceCount = 0;
+    let cancelCount = 0;
+    let assessmentCount = 0;
 
     notams.forEach(notam => {
       const formData = notam.formData || {};
@@ -78,6 +81,7 @@ export default function AdminDashboard() {
       if (jenisNotam === 'NOTAM New') newCount++;
       else if (jenisNotam === 'NOTAM Replace') replaceCount++;
       else if (jenisNotam === 'NOTAM Cancel') cancelCount++;
+      else if (jenisNotam === 'Assessment Only') assessmentCount++;
     });
 
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
@@ -87,6 +91,7 @@ export default function AdminDashboard() {
       { name: 'NOTAM New', value: newCount },
       { name: 'Replace', value: replaceCount },
       { name: 'Cancel', value: cancelCount },
+      { name: 'Assessment', value: assessmentCount },
     ].filter(d => d.value > 0);
 
     const statusPie = [
@@ -369,7 +374,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Activity + Table Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2.5fr', gap: '1.5rem' }}>
         {/* Recent Activity */}
         <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '600px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
@@ -464,6 +469,7 @@ export default function AdminDashboard() {
                 <option value="NOTAM New">NOTAM New</option>
                 <option value="NOTAM Replace">NOTAM Replace</option>
                 <option value="NOTAM Cancel">NOTAM Cancel</option>
+                <option value="Assessment Only">Assessment Only</option>
               </select>
             </div>
           </div>
@@ -480,6 +486,7 @@ export default function AdminDashboard() {
                   <tr>
                     <th>No Form</th>
                     <th>Jenis</th>
+                    <th>Pembuat</th>
                     <th>Lokasi</th>
                     <th>Waktu Mulai</th>
                     <th>Status</th>
@@ -513,9 +520,16 @@ export default function AdminDashboard() {
                             {jenisNotam.replace('NOTAM ', '')}
                           </span>
                         </td>
+                        <td>
+                          <div style={{ fontSize: '0.85rem' }}>{formData.creatorName || notam.creatorName || notam.creator || notam.createdBy || '-'}</div>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{formData.creatorInitial || '-'}</div>
+                        </td>
                         <td style={{ fontSize: '0.88rem' }}>{lokasi}</td>
-                        <td style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                          {waktuMulai.replace('T', ' ')}
+                        <td>
+                          <div style={{ fontSize: '0.85rem' }}>{new Date(waktuMulai).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            sd. {new Date(waktuSelesai).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
+                          </div>
                         </td>
                         <td>
                           <span className={`badge ${isActive ? 'badge-green' : endTime < now ? 'badge-red' : 'badge-yellow'}`}>

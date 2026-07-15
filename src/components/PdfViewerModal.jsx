@@ -79,7 +79,13 @@ export default function PdfViewerModal({ notam, onClose }) {
 
       {createPortal(
         <div style={{ position: 'absolute', top: 0, left: 0, width: '750px', zIndex: -1000, opacity: 0, pointerEvents: 'none' }}>
-          <PdfTemplate ref={printRef} formData={notam.formData} user={{name: notam.creatorName || notam.creator, jabatan: notam.creatorJabatan}} formNo={notam.formNo} />
+          <PdfTemplate 
+            ref={printRef} 
+            formData={notam.formData} 
+            user={{name: notam.creatorName || notam.creator, jabatan: notam.creatorJabatan}} 
+            formNo={notam.formNo} 
+            docMode={notam.jenis === 'Assessment Only' ? 'assessment' : 'notam'}
+          />
         </div>,
         document.body
       )}

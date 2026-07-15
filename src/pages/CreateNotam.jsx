@@ -33,6 +33,7 @@ export default function CreateNotam() {
 
   const [selectedExistingNotamId, setSelectedExistingNotamId] = useState('');
   const [includeOpAssessment, setIncludeOpAssessment] = useState(false);
+  const [docMode, setDocMode] = useState('notam'); // 'notam' or 'assessment'
   const [pdfFormNo, setPdfFormNo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -52,7 +53,7 @@ export default function CreateNotam() {
 
     return notams.filter(n => {
       // Must be created by this user
-      if (n.creator !== user.username) return false;
+      if (n.createdBy != user.id && n.creator !== user.initial) return false;
 
       const formData = n.formData || {};
       const jenisNotam = formData.jenisNotam || n.jenis || '';
@@ -70,7 +71,7 @@ export default function CreateNotam() {
 
       return true;
     });
-  }, [notams, user.username]);
+  }, [notams, user.id, user.initial]);
 
   // Handle existing NOTAM selection for Replace/Cancel
   const handleExistingNotamChange = (e) => {
@@ -125,17 +126,23 @@ export default function CreateNotam() {
 
     const finalFormData = {
       ...formData,
-      includeOpAssessment: formData.jenisNotam === 'NOTAM New' ? includeOpAssessment : false,
-      targetFormNo
+      jenisNotam: docMode === 'assessment' ? 'Assessment Only' : formData.jenisNotam,
+      includeOpAssessment: docMode === 'assessment' ? true : (formData.jenisNotam === 'NOTAM New' ? includeOpAssessment : false),
+      targetFormNo,
+      creatorInitial: user.initial,
+      creatorName: user.nama,
+      creatorJabatan: user.jabatan,
+      creatorSignature: user.tanda_tangan
     };
 
     const newNotam = {
       id: uuidv4(),
       formNo,
-      creator: user.username,
-      creatorName: user.name,
-      creatorJabatan: user.jabatan,
-      createdAt: new Date().toISOString(),
+      jenis: docMode === 'assessment' ? 'Assessment Only' : formData.jenisNotam,
+      lokasi: formData.lokasi || 'N/A',
+      waktuMulai: formData.waktuMulai || new Date().toISOString(),
+      waktuSelesai: formData.waktuSelesai || new Date().toISOString(),
+      createdBy: user.id,
       formData: finalFormData
     };
 
@@ -282,7 +289,7 @@ export default function CreateNotam() {
   );
 
   const renderForm2 = () => {
-    if (formData.jenisNotam !== 'NOTAM New' || !includeOpAssessment) return null;
+    if (docMode !== 'assessment' && (formData.jenisNotam !== 'NOTAM New' || !includeOpAssessment)) return null;
 
     return (
       <div className="card" style={{ marginBottom: '2rem' }}>
@@ -290,6 +297,23 @@ export default function CreateNotam() {
           <Map size={24} color="var(--primary)" />
           <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Operational Assessment</h2>
         </div>
+
+        {docMode === 'assessment' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px dashed #e2e8f0' }}>
+            <div className="form-group">
+              <label className="label">Lokasi</label>
+              <input type="text" name="lokasi" value={formData.lokasi} onChange={handleInputChange} className="input-field" placeholder="e.g. WAR1, WAR11" required />
+            </div>
+            <div className="form-group">
+              <label className="label">Waktu Mulai Pelaksanaan (UTC)</label>
+              <input type="datetime-local" name="waktuMulai" value={formData.waktuMulai} onChange={handleInputChange} className="input-field" min={currentUtcStr} required />
+            </div>
+            <div className="form-group">
+              <label className="label">Waktu Selesai Pelaksanaan (UTC)</label>
+              <input type="datetime-local" name="waktuSelesai" value={formData.waktuSelesai} onChange={handleInputChange} className="input-field" min={formData.waktuMulai || currentUtcStr} required />
+            </div>
+          </div>
+        )}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
           <div className="form-group" style={{ marginBottom: 0 }}>
@@ -372,7 +396,34 @@ export default function CreateNotam() {
           }
         }}
       >
-        {renderForm1()}
+        {/* Opsi Jenis Dokumen */}
+        <div className="card" style={{ marginBottom: '2rem' }}>
+          <h3 style={{ margin: '0 0 1rem', fontSize: '1.1rem' }}>Pilih Jenis Dokumen yang Ingin Dibuat</h3>
+          <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
+              <input 
+                type="radio" 
+                value="notam" 
+                checked={docMode === 'notam'} 
+                onChange={() => setDocMode('notam')} 
+                style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer' }}
+              />
+              Permohonan Penerbitan NOTAM
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 500 }}>
+              <input 
+                type="radio" 
+                value="assessment" 
+                checked={docMode === 'assessment'} 
+                onChange={() => setDocMode('assessment')} 
+                style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer' }}
+              />
+              Operational Assessment
+            </label>
+          </div>
+        </div>
+
+        {docMode === 'notam' && renderForm1()}
         {renderForm2()}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
@@ -392,7 +443,18 @@ export default function CreateNotam() {
 
       {/* Hidden print template rendered off-screen to avoid CSS layout interference */}
       <div style={{ position: 'fixed', top: 0, left: '200vw', width: '750px', zIndex: -1000, pointerEvents: 'none' }}>
-        <PdfTemplate ref={printRef} formData={{ ...formData, includeOpAssessment: formData.jenisNotam === 'NOTAM New' ? includeOpAssessment : false, targetFormNo: (formData.jenisNotam === 'NOTAM Replace' || formData.jenisNotam === 'NOTAM Cancel') && selectedExistingNotamId ? notams.find(n => n.id === selectedExistingNotamId)?.formNo : '' }} user={user} formNo={pdfFormNo} />
+        <PdfTemplate 
+          ref={printRef} 
+          formData={{ 
+            ...formData, 
+            jenisNotam: docMode === 'assessment' ? 'Assessment Only' : formData.jenisNotam,
+            includeOpAssessment: docMode === 'assessment' ? true : (formData.jenisNotam === 'NOTAM New' ? includeOpAssessment : false),
+            targetFormNo: (formData.jenisNotam === 'NOTAM Replace' || formData.jenisNotam === 'NOTAM Cancel') && selectedExistingNotamId ? notams.find(n => n.id === selectedExistingNotamId)?.formNo : '' 
+          }} 
+          user={user} 
+          formNo={pdfFormNo} 
+          docMode={docMode}
+        />
       </div>
     </div>
   );

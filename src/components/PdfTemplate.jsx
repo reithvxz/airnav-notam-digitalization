@@ -4,7 +4,7 @@ import React, { forwardRef } from 'react';
 // At 96dpi, 180mm ≈ 680px. We use 680px to guarantee it fits inside html2canvas windowWidth of 700px.
 const PAGE_WIDTH = 680;
 
-const PdfTemplate = forwardRef(({ formData, user, formNo }, ref) => {
+const PdfTemplate = forwardRef(({ formData, user, formNo, docMode }, ref) => {
   const today = new Date();
   const monthRoman = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][today.getMonth()];
   const displayFormNo = formNo || `01/${monthRoman}/${today.getFullYear()}`;
@@ -55,7 +55,9 @@ const PdfTemplate = forwardRef(({ formData, user, formNo }, ref) => {
   };
 
   /* ── FORM 1 ── */
-  const renderForm1 = () => (
+  const renderForm1 = () => {
+    if (docMode === 'assessment') return null;
+    return (
     <div style={pageStyle}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
@@ -113,11 +115,11 @@ const PdfTemplate = forwardRef(({ formData, user, formNo }, ref) => {
                 <tbody>
                   <tr>
                     <td style={{ width: '60px', padding: '2px 0', border: 'none', verticalAlign: 'top' }}>Nama</td>
-                    <td style={{ padding: '2px 0', border: 'none', wordBreak: 'break-word' }}>: {user?.name || 'IBNU HARGIYANTO'}</td>
+                    <td style={{ padding: '2px 0', border: 'none', wordBreak: 'break-word' }}>: {formData.creatorName || user?.nama || 'IBNU HARGIYANTO'}</td>
                   </tr>
                   <tr>
                     <td style={{ width: '60px', padding: '2px 0', border: 'none', verticalAlign: 'top' }}>Jabatan</td>
-                    <td style={{ padding: '2px 0', border: 'none', wordBreak: 'break-word' }}>: {user?.jabatan || 'MANAGER OPERASI APP TWR 2'}</td>
+                    <td style={{ padding: '2px 0', border: 'none', wordBreak: 'break-word' }}>: {formData.creatorJabatan || user?.jabatan || 'MANAGER OPERASI APP TWR 2'}</td>
                   </tr>
                 </tbody>
               </table>
@@ -186,8 +188,18 @@ const PdfTemplate = forwardRef(({ formData, user, formNo }, ref) => {
           {/* Tanda tangan */}
           <tr>
             <td style={{ ...cellBase, padding: '10px', textAlign: 'center' }}>
-              <div style={{ fontWeight: 'bold', marginBottom: '40px' }}>Pemohon</div>
-              <div style={{ textDecoration: 'underline' }}>{user?.name?.replace(' ', '') || 'IBNUHARGIYANTO'}</div>
+              <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>Pemohon</div>
+              {formData.creatorSignature || user?.tanda_tangan ? (
+                <img 
+                  src={`http://localhost:3000/signatures/${formData.creatorSignature || user?.tanda_tangan}`} 
+                  alt="Tanda Tangan Pemohon" 
+                  style={{ maxHeight: '60px', display: 'block', margin: '0 auto 10px' }} 
+                  crossOrigin="anonymous"
+                />
+              ) : (
+                <div style={{ height: '60px', marginBottom: '10px' }}></div>
+              )}
+              <div style={{ textDecoration: 'underline' }}>{formData.creatorName?.replace(' ', '') || user?.nama?.replace(' ', '') || 'IBNUHARGIYANTO'}</div>
               <div style={{ marginTop: '10px' }}>Tanggal : {todayStr}</div>
             </td>
             <td style={{ ...cellBase, padding: '10px', textAlign: 'center', verticalAlign: 'top' }}>
@@ -197,14 +209,15 @@ const PdfTemplate = forwardRef(({ formData, user, formNo }, ref) => {
         </tbody>
       </table>
     </div>
-  );
+    );
+  };
 
-  /* ── FORM 2 (Operational Assessment, only for NOTAM New) ── */
+  /* ── FORM 2 (Operational Assessment) ── */
   const renderForm2 = () => {
-    if (formData.jenisNotam !== 'NOTAM New' || !formData.includeOpAssessment) return null;
+    if (docMode !== 'assessment' && (formData.jenisNotam !== 'NOTAM New' || !formData.includeOpAssessment)) return null;
 
     return (
-      <div style={{ ...pageStyle, pageBreakBefore: 'always', paddingTop: '10px' }}>
+      <div style={{ ...pageStyle, pageBreakBefore: docMode === 'assessment' ? 'auto' : 'always', paddingTop: '10px' }}>
         <table style={tableStyle}>
           <tbody>
             {/* Title */}
@@ -295,14 +308,26 @@ const PdfTemplate = forwardRef(({ formData, user, formNo }, ref) => {
                 <div style={{ whiteSpace: 'pre-wrap', marginTop: '5px' }}>{formData.conclusion}</div>
               </td>
             </tr>
-            {/* Signature */}
+            {/* Signature Area */}
             <tr>
-              <td colSpan={2} style={{ ...cellBase, padding: '10px', textAlign: 'center' }}>
-                <div style={{ marginBottom: '15px' }}>ATS UNIT INVOLVED :</div>
-                <div>{user?.jabatan?.split('APP')[0] || 'Manager Operasi Surabaya'}</div>
-                <div style={{ height: '40px' }}></div>
-                <div style={{ textDecoration: 'underline' }}>{user?.name || 'IBNU HARGIYANTO'}</div>
-                <div>{user?.jabatan || 'Manager Operasi APP TWR 2'}</div>
+              <td style={{ ...cellBase, padding: '10px', textAlign: 'center', verticalAlign: 'bottom' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '40px' }}></div>
+              </td>
+              <td style={{ ...cellBase, padding: '10px', textAlign: 'center' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>Surabaya, {todayStr}</div>
+                <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>Pemohon</div>
+                {formData.creatorSignature || user?.tanda_tangan ? (
+                  <img 
+                    src={`http://localhost:3000/signatures/${formData.creatorSignature || user?.tanda_tangan}`} 
+                    alt="Tanda Tangan Pemohon" 
+                    style={{ maxHeight: '60px', display: 'block', margin: '0 auto 10px' }} 
+                    crossOrigin="anonymous"
+                  />
+                ) : (
+                  <div style={{ height: '60px', marginBottom: '10px' }}></div>
+                )}
+                <div style={{ textDecoration: 'underline' }}>{formData.creatorName || user?.nama || 'IBNU HARGIYANTO'}</div>
+                <div>{formData.creatorJabatan || user?.jabatan || 'MANAGER OPERASI APP TWR 2'}</div>
               </td>
             </tr>
           </tbody>

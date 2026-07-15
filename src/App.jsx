@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import AdminDashboard from './pages/AdminDashboard';
 import EmployeeDashboard from './pages/EmployeeDashboard';
 import CreateNotam from './pages/CreateNotam';
+import AccountManagement from './pages/AccountManagement';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -36,6 +37,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute allowedRole="admin">
               <CreateNotam />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/admin/accounts" 
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <AccountManagement />
             </ProtectedRoute>
           } 
         />

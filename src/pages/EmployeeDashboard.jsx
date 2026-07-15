@@ -261,6 +261,7 @@ export default function EmployeeDashboard() {
             <option value="NOTAM New">NOTAM New</option>
             <option value="NOTAM Replace">NOTAM Replace</option>
             <option value="NOTAM Cancel">NOTAM Cancel</option>
+            <option value="Assessment Only">Assessment Only</option>
           </select>
         </div>
 
@@ -294,8 +295,9 @@ export default function EmployeeDashboard() {
 
                 const isNew = jenisNotam === 'NOTAM New';
                 const isReplace = jenisNotam === 'NOTAM Replace';
-                const badgeClass = isNew ? 'badge-blue' : isReplace ? 'badge-yellow' : 'badge-red';
-                const accentColor = isNew ? '#3b82f6' : isReplace ? '#f59e0b' : '#ef4444';
+                const isAssessment = jenisNotam === 'Assessment Only';
+                const badgeClass = isNew ? 'badge-blue' : isReplace ? 'badge-yellow' : isAssessment ? 'badge-gray' : 'badge-red';
+                const accentColor = isNew ? '#3b82f6' : isReplace ? '#f59e0b' : isAssessment ? '#64748b' : '#ef4444';
 
                 return (
                   <div

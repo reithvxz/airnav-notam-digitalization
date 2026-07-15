@@ -2,40 +2,41 @@
 
 Sistem digitalisasi pengelolaan **Notice to Airmen (NOTAM)** berbasis web yang dikembangkan khusus untuk keperluan internal **AirNav Indonesia Cabang Surabaya**. Aplikasi ini menggantikan proses pengajuan dan pencetakan NOTAM manual menjadi proses digital yang terpusat, cepat, dan mudah dipantau.
 
-## Pembaruan Terbaru (Update UI & UX)
-- 🎨 **Modern Login Page**: Halaman login dirombak total menggunakan efek *Glassmorphism* dan gradasi premium.
-- 📊 **Visualisasi Data Kaya**: Admin Dashboard sekarang dilengkapi dengan 3 Grafik interaktif: Grafik Batang (Statistik Bulanan), Grafik Lingkaran (Distribusi Jenis), dan Grafik Batang Mendatar (Distribusi Status NOTAM).
-- 🔄 **Pemisahan Form**: Form Permohonan Penerbitan NOTAM dan Operational Assessment sekarang telah dipisah agar lebih fleksibel sesuai dengan jenis operasi (New, Replace, Cancel).
-- 🔒 **Sticky Dashboard Grid**: Tampilan kartu riwayat pada Admin Dashboard dan tabel sekarang memiliki ukuran tetap (*fixed height*) dengan sistem *scroll* mandiri, sehingga halaman web tidak akan melar tak beraturan seberapapun banyak dokumennya.
+## Pembaruan Terbaru (Update Database & UI)
+- 🗄️ **Migrasi ke MySQL**: Aplikasi kini telah didukung oleh backend (Express.js) dan database relasional (MySQL) menggunakan Sequelize ORM.
+- 🔐 **Manajemen Akun Terpusat**: Manager (Admin) sekarang dapat membuat akun untuk anggota tim (PT MANAGER OPERASI APP-TWR) secara langsung melalui menu Manajemen Akun.
+- 🎨 **Modern Login Page**: Halaman login dirombak total menggunakan efek *Glassmorphism*, dukungan ganti kata sandi mandiri, serta *case-sensitive username*.
+- 🔄 **Opsi Operational Assessment**: Tersedia opsi untuk murni mencetak 1 halaman Form Operational Assessment terpisah dari Permohonan Penerbitan NOTAM.
+- 📊 **Visualisasi Data Kaya**: Admin Dashboard sekarang dilengkapi dengan 3 Grafik interaktif: Statistik Bulanan, Distribusi Jenis, dan Distribusi Status NOTAM.
+- 🔒 **Tanda Tangan Otomatis**: Form cetak PDF akan secara otomatis membubuhkan nama dan pindaian tanda tangan milik pembuat surat (diambil dari profil akun yang *login*).
 
 ## Fitur Utama
 
 Aplikasi ini memiliki dua Role pengguna utama:
 
 1. **Admin / Manajemen Operasi**
-   - **Dashboard Statistik**: Visualisasi data surat NOTAM yang masuk, aktif, dan akan datang pada bulan berjalan secara interaktif melalui *charts*.
-   - **Pembuatan NOTAM (Create)**: Form digital lengkap untuk pengajuan NOTAM baru. Mendukung *auto-generation* Nomor Surat Kegiatan.
+   - **Dashboard Statistik**: Visualisasi data surat NOTAM yang masuk, aktif, dan akan datang secara interaktif melalui *charts*.
+   - **Pembuatan NOTAM (Create)**: Form digital lengkap untuk pengajuan NOTAM baru (termasuk *Assessment Only*). 
+   - **Manajemen Akun**: Penambahan akun karyawan baru, lengkap dengan *upload* file tanda tangan.
    - **NOTAM Replace & Cancel**: Manajemen siklus hidup NOTAM untuk memperbarui atau membatalkan NOTAM. NOTAM yang direplace/cancel otomatis terhubung dengan surat referensinya dan memperbarui statusnya.
-   - **Cetak PDF Otomatis**: Generator dokumen PDF standar AirNav (lengkap dengan kop surat dan format tabel resmi) secara *on-the-fly* berdasarkan data form yang disubmit.
+   - **Cetak PDF Otomatis**: Generator dokumen PDF standar AirNav secara *on-the-fly* berdasarkan data form yang disubmit.
 
 2. **Karyawan Biasa**
-   - **Dashboard Karyawan**: Akses untuk melihat seluruh dokumen NOTAM yang sudah diterbitkan.
-   - **Filter Waktu & Status**: Memungkinkan pencarian dan penyaringan surat NOTAM berdasarkan Waktu Mulai, Status (Terbit, Incoming, Selesai), dan Jenis NOTAM (New, Replace, Cancel).
+   - **Dashboard Karyawan**: Akses untuk melihat seluruh dokumen NOTAM yang sudah diterbitkan dalam format kartu yang estetik.
+   - **Filter Waktu & Status**: Memungkinkan pencarian dan penyaringan surat NOTAM berdasarkan Waktu Mulai, Status (Terbit, Incoming, Selesai), dan Jenis NOTAM (New, Replace, Cancel, Assessment).
    - **Viewer & Downloader PDF**: Fitur melihat langsung dokumen PDF NOTAM di dalam aplikasi (tanpa perlu membuka tab baru) dan mengunduhnya.
 
 ## Teknologi yang Digunakan
 
-- **Frontend Framework**: [React.js](https://reactjs.org/) + [Vite](https://vitejs.dev/)
-- **Styling**: Vanilla CSS dengan modern *UI tokens* (Flexbox, CSS Grid, Glassmorphism).
-- **Icons**: Lucide React.
-- **Charts**: Recharts (PieChart, BarChart).
-- **Routing**: React Router DOM.
-- **State Management**: React Context API & LocalStorage (prototype).
-- **PDF Generation**: `html2pdf.js` untuk merender React komponen ke format A4.
+- **Frontend**: [React.js](https://reactjs.org/) + [Vite](https://vitejs.dev/) + Vanilla CSS (Glassmorphism).
+- **Backend**: Node.js + Express.js.
+- **Database**: MySQL 8.0+ dengan Sequelize ORM.
+- **Icons & Charts**: Lucide React & Recharts.
+- **PDF Generation**: `html2pdf.js` untuk merender komponen React ke format A4.
 
 ## Persiapan & Menjalankan Project Locally
 
-Pastikan kamu sudah menginstal [Node.js](https://nodejs.org/) di komputermu.
+Pastikan kamu sudah menginstal [Node.js](https://nodejs.org/) dan **XAMPP (MySQL)** di komputermu.
 
 1. **Clone repository ini:**
    ```bash
@@ -43,19 +44,39 @@ Pastikan kamu sudah menginstal [Node.js](https://nodejs.org/) di komputermu.
    cd airnav-notam-digitalization
    ```
 
-2. **Install semua *dependencies*:**
+2. **Setup Database (MySQL):**
+   - Buka XAMPP dan jalankan modul **MySQL**.
+   - Buka phpMyAdmin (`http://localhost/phpmyadmin`) dan buat database baru bernama `airnav_db`.
+
+3. **Install *dependencies* Backend & Frontend:**
    ```bash
+   # Install dependensi backend
+   cd backend
+   npm install
+
+   # Kembali ke folder utama dan install dependensi frontend
+   cd ..
    npm install
    ```
 
-3. **Jalankan server pengembangan (Development Server):**
+4. **Jalankan Seed Data (Opsional, untuk membuat akun Manager awal):**
    ```bash
-   npm run dev
+   cd backend
+   node seed.js
    ```
 
-4. **Buka di Browser:**
-   Buka `http://localhost:5173` (atau port lain yang ditampilkan di terminal) untuk melihat aplikasi.
+5. **Jalankan Aplikasi:**
+   Dibutuhkan dua terminal terpisah untuk menjalankan Backend dan Frontend.
+   
+   **Terminal 1 (Backend Server):**
+   ```bash
+   cd backend
+   node server.js
+   # Server akan berjalan di http://localhost:3000
+   ```
 
-## Catatan Kolaborasi (Untuk Teman Kelompok)
-- Demo akun: Admin (`admin/admin123`), Karyawan (`karyawan/karyawan123`).
-- Jika ada *update* logika atau tampilan UI, pastikan untuk melakukan `git pull` secara rutin agar sinkron.
+   **Terminal 2 (Frontend Client):**
+   ```bash
+   npm run dev
+   # Akses web di http://localhost:5173
+   ```
