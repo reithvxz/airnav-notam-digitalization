@@ -24,16 +24,18 @@ function timeAgo(dateStr) {
 
 export default function AdminDashboard() {
   const { notams } = useNotams();
-  const [filter, setFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [jenisFilter, setJenisFilter] = useState('all');
   const [selectedNotam, setSelectedNotam] = useState(null);
 
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
 
-  const { activeNotams, incomingNotams, completedThisMonth, thisMonthCount, filteredNotams, chartData, pieData, recentActivity } = useMemo(() => {
+  const { activeNotams, incomingNotams, pastNotams, completedThisMonth, thisMonthCount, filteredNotams, chartData, pieData, statusPieData, recentActivity } = useMemo(() => {
     let active = [];
     let incoming = [];
+    let past = [];
     let completedMonth = 0;
     let monthCount = 0;
 
@@ -48,7 +50,9 @@ export default function AdminDashboard() {
       const endTime = new Date(formData.waktuSelesai || notam.waktuSelesai || notam.createdAt);
       const createdDate = new Date(notam.createdAt);
 
-      if (startTime <= now) {
+      if (endTime < now) {
+        past.push(notam);
+      } else if (startTime <= now) {
         active.push(notam);
       } else {
         incoming.push(notam);
@@ -85,9 +89,22 @@ export default function AdminDashboard() {
       { name: 'Cancel', value: cancelCount },
     ].filter(d => d.value > 0);
 
+    const statusPie = [
+      { name: 'Terbit', value: active.length },
+      { name: 'Incoming', value: incoming.length },
+      { name: 'Selesai', value: past.length },
+    ].filter(d => d.value > 0);
+
     let filtered = notams;
-    if (filter === 'active') filtered = active;
-    if (filter === 'incoming') filtered = incoming;
+    
+    if (statusFilter === 'active') filtered = active;
+    else if (statusFilter === 'incoming') filtered = incoming;
+    else if (statusFilter === 'past') filtered = past;
+
+    if (jenisFilter !== 'all') {
+      filtered = filtered.filter(n => (n.formData?.jenisNotam || n.jenis) === jenisFilter);
+    }
+    
     filtered = [...filtered].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     // Recent activity: last 6
@@ -98,12 +115,14 @@ export default function AdminDashboard() {
       incomingNotams: incoming,
       completedThisMonth: completedMonth,
       thisMonthCount: monthCount,
+      pastNotams: past,
       filteredNotams: filtered,
       chartData: chart,
       pieData: pie,
+      statusPieData: statusPie,
       recentActivity: recent
     };
-  }, [notams, filter, now, currentMonth, currentYear]);
+  }, [notams, statusFilter, jenisFilter, now, currentMonth, currentYear]);
 
   const statCards = [
     {
@@ -144,6 +163,16 @@ export default function AdminDashboard() {
       borderColor: '#7c3aed',
       subtitle: `${completedThisMonth} selesai`
     },
+    {
+      label: 'Sudah Lewat',
+      value: pastNotams.length,
+      icon: Clock,
+      iconBg: '#f3f4f6',
+      iconColor: '#6b7280',
+      borderColor: '#6b7280',
+      filterKey: 'past',
+      subtitle: 'Tidak aktif'
+    },
   ];
 
   const CustomTooltip = ({ active: isActive, payload, label }) => {
@@ -179,15 +208,15 @@ export default function AdminDashboard() {
       </div>
 
       {/* Stat Cards */}
-      <div className="stat-cards" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+      <div className="stat-cards" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
         {statCards.map((card) => {
           const Icon = card.icon;
-          const isSelected = card.filterKey && filter === card.filterKey;
+          const isSelected = card.filterKey && statusFilter === card.filterKey;
           return (
             <div
               key={card.label}
               className="stat-card"
-              onClick={() => card.filterKey && setFilter(card.filterKey)}
+              onClick={() => card.filterKey && setStatusFilter(card.filterKey)}
               style={{
                 cursor: card.filterKey ? 'pointer' : 'default',
                 border: isSelected ? `2px solid ${card.borderColor}` : '1px solid #e2e8f0',
@@ -219,7 +248,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Charts Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
         {/* Bar Chart */}
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -296,17 +325,58 @@ export default function AdminDashboard() {
             )}
           </div>
         </div>
+
+        {/* Status Pie Chart -> Horizontal Bar Chart */}
+        <div className="card">
+          <div style={{ marginBottom: '1rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Distribusi Status</h3>
+            <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Semua NOTAM</p>
+          </div>
+          <div style={{ width: '100%', height: 260, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {statusPieData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={statusPieData} layout="vertical" barSize={28} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
+                  <XAxis type="number" hide />
+                  <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} width={70} />
+                  <Tooltip
+                    cursor={{ fill: 'rgba(59,130,246,0.04)' }}
+                    contentStyle={{
+                      borderRadius: '10px',
+                      border: 'none',
+                      boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                      padding: '10px 14px',
+                    }}
+                    formatter={(value) => [`${value} NOTAM`, 'Total']}
+                  />
+                  <Bar dataKey="value" radius={[0, 6, 6, 0]}>
+                    {statusPieData.map((entry, index) => {
+                      const colors = {
+                        'Terbit': '#10b981',
+                        'Incoming': '#f59e0b',
+                        'Selesai': '#ef4444'
+                      };
+                      return <Cell key={`cell-${index}`} fill={colors[entry.name]} />;
+                    })}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <p style={{ color: 'var(--text-muted)' }}>Belum ada data</p>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Activity + Table Row */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem' }}>
         {/* Recent Activity */}
-        <div className="card">
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '600px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
             <Activity size={18} color="var(--primary)" />
             <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Aktivitas Terbaru</h3>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0', flex: 1, overflowY: 'auto', paddingRight: '4px' }}>
             {recentActivity.map((notam, idx) => {
               const formData = notam.formData || {};
               const jenisNotam = formData.jenisNotam || notam.jenis || '';
@@ -349,7 +419,12 @@ export default function AdminDashboard() {
                         {jenisNotam.replace('NOTAM ', '')}
                       </span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                    {formData.targetFormNo && (
+                      <div style={{ fontSize: '0.7rem', color: isReplace ? '#d97706' : '#dc2626', marginTop: '2px', fontWeight: 500 }}>
+                        👉 {isReplace ? 'Replacing' : 'Canceling'}: {formData.targetFormNo}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
                       <MapPin size={11} color="#94a3b8" />
                       <span style={{ fontSize: '0.78rem', color: '#64748b' }}>{lokasi}</span>
                     </div>
@@ -362,12 +437,35 @@ export default function AdminDashboard() {
         </div>
 
         {/* Table */}
-        <div className="card" style={{ overflow: 'hidden' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+        <div className="card" style={{ overflow: 'visible', display: 'flex', flexDirection: 'column', height: '600px', paddingBottom: '0.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
             <h3 style={{ margin: 0, fontSize: '1.1rem' }}>
-              {filter === 'all' ? 'Semua NOTAM' : filter === 'active' ? 'NOTAM Aktif' : 'NOTAM Incoming'}
+              Daftar NOTAM <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'normal', marginLeft: '8px' }}>({filteredNotams.length} dokumen)</span>
             </h3>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{filteredNotams.length} dokumen</span>
+            
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <select 
+                value={statusFilter} 
+                onChange={(e) => setStatusFilter(e.target.value)}
+                style={{ padding: '0.4rem 0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none' }}
+              >
+                <option value="all">Semua Status</option>
+                <option value="active">Aktif (Terbit)</option>
+                <option value="incoming">Incoming</option>
+                <option value="past">Sudah Lewat</option>
+              </select>
+              
+              <select 
+                value={jenisFilter} 
+                onChange={(e) => setJenisFilter(e.target.value)}
+                style={{ padding: '0.4rem 0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none' }}
+              >
+                <option value="all">Semua Jenis</option>
+                <option value="NOTAM New">NOTAM New</option>
+                <option value="NOTAM Replace">NOTAM Replace</option>
+                <option value="NOTAM Cancel">NOTAM Cancel</option>
+              </select>
+            </div>
           </div>
 
           {filteredNotams.length === 0 ? (
@@ -376,7 +474,7 @@ export default function AdminDashboard() {
               <p>Belum ada NOTAM pada kategori ini.</p>
             </div>
           ) : (
-            <div style={{ overflowX: 'auto', maxHeight: '420px', overflowY: 'auto' }}>
+            <div style={{ overflowX: 'auto', overflowY: 'auto', flex: 1 }}>
               <table className="data-table">
                 <thead>
                   <tr>
@@ -394,12 +492,21 @@ export default function AdminDashboard() {
                     const jenisNotam = formData.jenisNotam || notam.jenis || '';
                     const lokasi = formData.lokasi || notam.lokasi || '';
                     const waktuMulai = formData.waktuMulai || notam.waktuMulai || notam.createdAt;
+                    const waktuSelesai = formData.waktuSelesai || notam.waktuSelesai || notam.createdAt;
                     const startTime = new Date(waktuMulai);
-                    const isActive = startTime <= now;
+                    const endTime = new Date(waktuSelesai);
+                    const isActive = startTime <= now && endTime >= now;
 
                     return (
                       <tr key={notam.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedNotam(notam)}>
-                        <td style={{ fontWeight: 600, fontSize: '0.9rem' }}>{notam.formNo}</td>
+                        <td style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                          {notam.formNo}
+                          {formData.targetFormNo && (
+                            <div style={{ fontSize: '0.72rem', color: jenisNotam === 'NOTAM Replace' ? '#d97706' : '#dc2626', marginTop: '4px' }}>
+                              👉 {jenisNotam === 'NOTAM Replace' ? 'Replacing' : 'Canceling'}: {formData.targetFormNo}
+                            </div>
+                          )}
+                        </td>
                         <td>
                           <span className={`badge ${jenisNotam === 'NOTAM New' ? 'badge-blue' : jenisNotam === 'NOTAM Replace' ? 'badge-yellow' : 'badge-red'}`}
                             style={{ fontSize: '0.72rem' }}>
@@ -411,8 +518,8 @@ export default function AdminDashboard() {
                           {waktuMulai.replace('T', ' ')}
                         </td>
                         <td>
-                          <span className={`badge ${isActive ? 'badge-green' : 'badge-yellow'}`}>
-                            {isActive ? 'Terbit' : 'Incoming'}
+                          <span className={`badge ${isActive ? 'badge-green' : endTime < now ? 'badge-red' : 'badge-yellow'}`}>
+                            {isActive ? 'Terbit' : endTime < now ? 'Selesai' : 'Incoming'}
                           </span>
                         </td>
                         <td>

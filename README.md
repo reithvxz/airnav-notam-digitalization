@@ -1,29 +1,37 @@
-# AirNav NOTAM Digitalization
+# AirNav NOTAM System
 
 Sistem digitalisasi pengelolaan **Notice to Airmen (NOTAM)** berbasis web yang dikembangkan khusus untuk keperluan internal **AirNav Indonesia Cabang Surabaya**. Aplikasi ini menggantikan proses pengajuan dan pencetakan NOTAM manual menjadi proses digital yang terpusat, cepat, dan mudah dipantau.
+
+## Pembaruan Terbaru (Update UI & UX)
+- 🎨 **Modern Login Page**: Halaman login dirombak total menggunakan efek *Glassmorphism* dan gradasi premium.
+- 📊 **Visualisasi Data Kaya**: Admin Dashboard sekarang dilengkapi dengan 3 Grafik interaktif: Grafik Batang (Statistik Bulanan), Grafik Lingkaran (Distribusi Jenis), dan Grafik Batang Mendatar (Distribusi Status NOTAM).
+- 🔄 **Pemisahan Form**: Form Permohonan Penerbitan NOTAM dan Operational Assessment sekarang telah dipisah agar lebih fleksibel sesuai dengan jenis operasi (New, Replace, Cancel).
+- 🔒 **Sticky Dashboard Grid**: Tampilan kartu riwayat pada Admin Dashboard dan tabel sekarang memiliki ukuran tetap (*fixed height*) dengan sistem *scroll* mandiri, sehingga halaman web tidak akan melar tak beraturan seberapapun banyak dokumennya.
 
 ## Fitur Utama
 
 Aplikasi ini memiliki dua Role pengguna utama:
 
 1. **Admin / Manajemen Operasi**
-   - **Dashboard Statistik**: Visualisasi data surat NOTAM yang masuk, aktif, dan akan datang pada bulan berjalan.
+   - **Dashboard Statistik**: Visualisasi data surat NOTAM yang masuk, aktif, dan akan datang pada bulan berjalan secara interaktif melalui *charts*.
    - **Pembuatan NOTAM (Create)**: Form digital lengkap untuk pengajuan NOTAM baru. Mendukung *auto-generation* Nomor Surat Kegiatan.
-   - **NOTAM Replace & Cancel**: Manajemen siklus hidup NOTAM untuk memperbarui atau membatalkan NOTAM yang sudah ada.
-   - **Cetak PDF Otomatis**: Generator dokumen PDF standar AirNav secara *on-the-fly* berdasarkan data form yang disubmit.
+   - **NOTAM Replace & Cancel**: Manajemen siklus hidup NOTAM untuk memperbarui atau membatalkan NOTAM. NOTAM yang direplace/cancel otomatis terhubung dengan surat referensinya dan memperbarui statusnya.
+   - **Cetak PDF Otomatis**: Generator dokumen PDF standar AirNav (lengkap dengan kop surat dan format tabel resmi) secara *on-the-fly* berdasarkan data form yang disubmit.
 
 2. **Karyawan Biasa**
    - **Dashboard Karyawan**: Akses untuk melihat seluruh dokumen NOTAM yang sudah diterbitkan.
-   - **Filter Waktu**: Memungkinkan pencarian dan penyaringan surat NOTAM berdasarkan Waktu Mulai dan Waktu Selesai Pelaksanaan.
+   - **Filter Waktu & Status**: Memungkinkan pencarian dan penyaringan surat NOTAM berdasarkan Waktu Mulai, Status (Terbit, Incoming, Selesai), dan Jenis NOTAM (New, Replace, Cancel).
    - **Viewer & Downloader PDF**: Fitur melihat langsung dokumen PDF NOTAM di dalam aplikasi (tanpa perlu membuka tab baru) dan mengunduhnya.
 
 ## Teknologi yang Digunakan
 
 - **Frontend Framework**: [React.js](https://reactjs.org/) + [Vite](https://vitejs.dev/)
-- **Styling**: Vanilla CSS dengan variabel terpusat untuk kemudahan kustomisasi tema.
+- **Styling**: Vanilla CSS dengan modern *UI tokens* (Flexbox, CSS Grid, Glassmorphism).
+- **Icons**: Lucide React.
+- **Charts**: Recharts (PieChart, BarChart).
 - **Routing**: React Router DOM.
-- **State Management**: React Context API & LocalStorage (untuk versi prototype ini).
-- **PDF Generation**: `html2pdf.js` & `jspdf` untuk me-render komponen React menjadi format A4 cetak siap pakai.
+- **State Management**: React Context API & LocalStorage (prototype).
+- **PDF Generation**: `html2pdf.js` untuk merender React komponen ke format A4.
 
 ## Persiapan & Menjalankan Project Locally
 
@@ -48,12 +56,6 @@ Pastikan kamu sudah menginstal [Node.js](https://nodejs.org/) di komputermu.
 4. **Buka di Browser:**
    Buka `http://localhost:5173` (atau port lain yang ditampilkan di terminal) untuk melihat aplikasi.
 
-## Struktur Proyek
-- `/src/components` - Komponen UI *reusable* (Modal PDF, Template PDF, dll).
-- `/src/pages` - Komponen halaman utama (Login, Dashboard Admin, Create NOTAM, Dashboard Karyawan).
-- `/src/context` - Konfigurasi Context API (Auth & Data NOTAM).
-- `/src/utils` - Fungsi-fungsi utilitas pendukung (seperti generator PDF).
-
 ## Catatan Kolaborasi (Untuk Teman Kelompok)
-- Data *dummy* untuk keperluan testing login dan NOTAM di-handle melalui LocalStorage agar mudah dicoba tanpa *backend* selama fase prototype.
+- Demo akun: Admin (`admin/admin123`), Karyawan (`karyawan/karyawan123`).
 - Jika ada *update* logika atau tampilan UI, pastikan untuk melakukan `git pull` secara rutin agar sinkron.

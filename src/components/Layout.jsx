@@ -28,24 +28,17 @@ export default function Layout() {
 
   return (
     <div className="app-container">
-      <aside className="sidebar">
-        <div className="sidebar-logo">
-          <div style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: '8px',
-            background: 'linear-gradient(135deg, #1d4ed8 0%, #10b981 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white'
-          }}>
-            <FileText size={20} />
-          </div>
-          AirNav
+      <header className="topbar">
+        <div className="topbar-logo" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <img 
+            src="/logo.png" 
+            alt="AirNav Logo" 
+            style={{ width: '40px', height: '40px', objectFit: 'contain' }} 
+          />
+          <span style={{ letterSpacing: '-0.5px' }}>AirNav <span style={{ color: '#64748b', fontWeight: 500 }}>NOTAM System</span></span>
         </div>
 
-        <nav style={{ flex: 1 }}>
+        <nav className="topbar-nav" style={{ display: 'flex', gap: '0.5rem', flex: 1, justifyContent: 'center', padding: '0 2rem' }}>
           {navItems.map((item) => (
             <Link
               key={item.path}
@@ -58,21 +51,21 @@ export default function Layout() {
           ))}
         </nav>
 
-        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1rem', marginTop: 'auto' }}>
-          <div style={{ marginBottom: '1rem', padding: '0 0.5rem' }}>
-            <p style={{ fontWeight: 600, fontSize: '0.875rem' }}>{user.name}</p>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{user.jabatan}</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          <div style={{ textAlign: 'right' }}>
+            <p style={{ fontWeight: 600, fontSize: '0.875rem', margin: 0 }}>{user.name}</p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{user.jabatan}</p>
           </div>
           <button 
             onClick={handleLogout}
-            className="nav-link" 
-            style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: 'var(--danger)' }}
+            className="btn btn-secondary" 
+            style={{ color: 'var(--danger)', padding: '0.4rem 0.8rem' }}
           >
-            <LogOut size={20} />
+            <LogOut size={16} />
             Logout
           </button>
         </div>
-      </aside>
+      </header>
 
       <main className="main-content">
         <Outlet />

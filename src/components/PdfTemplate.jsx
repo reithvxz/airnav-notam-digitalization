@@ -201,7 +201,7 @@ const PdfTemplate = forwardRef(({ formData, user, formNo }, ref) => {
 
   /* ── FORM 2 (Operational Assessment, only for NOTAM New) ── */
   const renderForm2 = () => {
-    if (formData.jenisNotam !== 'NOTAM New') return null;
+    if (formData.jenisNotam !== 'NOTAM New' || !formData.includeOpAssessment) return null;
 
     return (
       <div style={{ ...pageStyle, pageBreakBefore: 'always', paddingTop: '10px' }}>

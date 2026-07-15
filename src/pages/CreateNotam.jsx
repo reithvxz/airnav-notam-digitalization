@@ -6,7 +6,6 @@ import generatePdf from '../utils/pdfGenerator';
 import PdfTemplate from '../components/PdfTemplate';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
-import { createPortal } from 'react-dom';
 
 export default function CreateNotam() {
   const { user } = useAuth();
@@ -33,6 +32,8 @@ export default function CreateNotam() {
   });
 
   const [selectedExistingNotamId, setSelectedExistingNotamId] = useState('');
+  const [includeOpAssessment, setIncludeOpAssessment] = useState(false);
+  const [pdfFormNo, setPdfFormNo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const printRef = useRef();
@@ -40,9 +41,35 @@ export default function CreateNotam() {
   // Compute minimum date (current UTC time)
   const currentUtcStr = new Date().toISOString().slice(0, 16);
 
-  // Filter existing NOTAMs created by this user
-  const userNotams = useMemo(() => {
-    return notams.filter(n => n.creator === user.username);
+  // Filter existing NOTAMs for Replace/Cancel
+  const availableNotams = useMemo(() => {
+    const now = new Date();
+    
+    // Find all formNos that have been cancelled
+    const cancelledFormNos = notams
+      .filter(n => (n.formData?.jenisNotam === 'NOTAM Cancel' || n.jenis === 'NOTAM Cancel') && n.formData?.targetFormNo)
+      .map(n => n.formData.targetFormNo);
+
+    return notams.filter(n => {
+      // Must be created by this user
+      if (n.creator !== user.username) return false;
+
+      const formData = n.formData || {};
+      const jenisNotam = formData.jenisNotam || n.jenis || '';
+      
+      // Cancel NOTAMs cannot be replaced/cancelled again
+      if (jenisNotam === 'NOTAM Cancel') return false;
+
+      // Already cancelled NOTAMs cannot be chosen
+      if (cancelledFormNos.includes(n.formNo)) return false;
+
+      // Must be Active or Incoming (waktuSelesai has not passed)
+      const waktuSelesai = formData.waktuSelesai || n.waktuSelesai || n.createdAt;
+      const endTime = new Date(waktuSelesai);
+      if (endTime < now) return false;
+
+      return true;
+    });
   }, [notams, user.username]);
 
   // Handle existing NOTAM selection for Replace/Cancel
@@ -78,61 +105,68 @@ export default function CreateNotam() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    let formNo = '';
+    const today = new Date();
+    const monthRoman = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][today.getMonth()];
+    const currentYear = today.getFullYear();
     
-    if (formData.jenisNotam === 'NOTAM Cancel') {
-      if (selectedExistingNotamId) {
-        deleteNotam(selectedExistingNotamId);
-      }
-    } else if (formData.jenisNotam === 'NOTAM Replace') {
-      if (selectedExistingNotamId) {
-        formNo = notams.find(n => n.id === selectedExistingNotamId)?.formNo;
-        updateNotam(selectedExistingNotamId, formData);
-        
-        // Generate PDF
-        const pdfFilename = `NOTAM_${formData.jenisNotam.replace(' ', '_')}_${formNo.replace(/\//g, '_')}.pdf`;
-        await generatePdf(printRef.current, pdfFilename);
-      }
-    } else {
-      // NOTAM New
-      // Calculate Form No based on current month
-      const today = new Date();
-      const monthRoman = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][today.getMonth()];
-      const currentYear = today.getFullYear();
-      
-      const notamsThisMonth = notams.filter(n => {
-        const d = new Date(n.createdAt);
-        return d.getMonth() === today.getMonth() && d.getFullYear() === currentYear;
-      });
+    const notamsThisMonth = notams.filter(n => {
+      const d = new Date(n.createdAt);
+      return d.getMonth() === today.getMonth() && d.getFullYear() === currentYear;
+    });
 
-      const nextNumber = notamsThisMonth.length + 1;
-      formNo = `${nextNumber.toString().padStart(2, '0')}/${monthRoman}/${currentYear}`;
+    const nextNumber = notamsThisMonth.length + 1;
+    const formNo = `${nextNumber.toString().padStart(2, '0')}/${monthRoman}/${currentYear}`;
 
-      const newNotam = {
-        id: uuidv4(),
-        formNo,
-        creator: user.username,
-        creatorName: user.name,
-        creatorJabatan: user.jabatan,
-        createdAt: new Date().toISOString(),
-        formData: formData
-      };
-
-      addNotam(newNotam);
-
-      // We need to wait for state to update ideally, but we can generate PDF with current data
-      // For PDF Generation we use the template which uses formNo passed or inferred.
-      const pdfFilename = `NOTAM_New_${formNo.replace(/\//g, '_')}.pdf`;
-      await generatePdf(printRef.current, pdfFilename);
+    // Get targetFormNo if Replace or Cancel
+    let targetFormNo = '';
+    if ((formData.jenisNotam === 'NOTAM Replace' || formData.jenisNotam === 'NOTAM Cancel') && selectedExistingNotamId) {
+      targetFormNo = notams.find(n => n.id === selectedExistingNotamId)?.formNo || '';
     }
-    
-    setIsSubmitting(false);
-    setIsSuccess(true);
-    
-    setTimeout(() => {
-      setIsSuccess(false);
-      navigate('/admin/dashboard');
-    }, 2000);
+
+    const finalFormData = {
+      ...formData,
+      includeOpAssessment: formData.jenisNotam === 'NOTAM New' ? includeOpAssessment : false,
+      targetFormNo
+    };
+
+    const newNotam = {
+      id: uuidv4(),
+      formNo,
+      creator: user.username,
+      creatorName: user.name,
+      creatorJabatan: user.jabatan,
+      createdAt: new Date().toISOString(),
+      formData: finalFormData
+    };
+
+    // Update state to render the correct formNo in the hidden template
+    setPdfFormNo(formNo);
+
+    // Wait for React to render the hidden template with the correct formNo
+    setTimeout(async () => {
+      try {
+        // Generate PDF first before mutating context
+        const pdfFilename = `NOTAM_${formData.jenisNotam.replace(' ', '_')}_${formNo.replace(/\//g, '_')}.pdf`;
+        
+        // Add a safety timeout to prevent infinite hangs
+        const pdfPromise = generatePdf(printRef.current, pdfFilename);
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('PDF generation timed out')), 8000));
+        
+        await Promise.race([pdfPromise, timeoutPromise]);
+      } catch (err) {
+        console.error("PDF Generation failed or timed out:", err);
+      }
+      
+      // Then save data and redirect (will execute even if PDF fails)
+      addNotam(newNotam);
+      setIsSubmitting(false);
+      setIsSuccess(true);
+      
+      setTimeout(() => {
+        setIsSuccess(false);
+        navigate('/admin/dashboard');
+      }, 2000);
+    }, 100);
   };
 
   const renderForm1 = () => (
@@ -170,8 +204,8 @@ export default function CreateNotam() {
               required
             >
               <option value="">-- Pilih NOTAM --</option>
-              {userNotams.map(n => (
-                <option key={n.id} value={n.id}>{n.formNo} - {n.formData.lokasi}</option>
+              {availableNotams.map(n => (
+                <option key={n.id} value={n.id}>{n.formNo} - {n.formData?.lokasi || ''}</option>
               ))}
             </select>
           </div>
@@ -228,13 +262,27 @@ export default function CreateNotam() {
             <label className="label">Dokumen Pendukung (jika ada)</label>
             <input type="text" name="dokumenPendukung" value={formData.dokumenPendukung} onChange={handleInputChange} className="input-field" placeholder="e.g. Form No : 044 / VI / 2026" />
           </div>
+
+          {formData.jenisNotam === 'NOTAM New' && (
+            <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', fontWeight: 500, color: '#334155' }}>
+                <input 
+                  type="checkbox" 
+                  checked={includeOpAssessment} 
+                  onChange={(e) => setIncludeOpAssessment(e.target.checked)} 
+                  style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer' }}
+                />
+                Sertakan Form Operational Assessment
+              </label>
+            </div>
+          )}
         </>
       )}
     </div>
   );
 
   const renderForm2 = () => {
-    if (formData.jenisNotam !== 'NOTAM New') return null;
+    if (formData.jenisNotam !== 'NOTAM New' || !includeOpAssessment) return null;
 
     return (
       <div className="card" style={{ marginBottom: '2rem' }}>
@@ -342,13 +390,10 @@ export default function CreateNotam() {
         </div>
       </form>
 
-      {/* Hidden print template rendered at document root to avoid CSS layout interference */}
-      {formData.jenisNotam !== 'NOTAM Cancel' && createPortal(
-        <div style={{ position: 'absolute', top: 0, left: 0, width: '750px', zIndex: -1000, opacity: 0, pointerEvents: 'none' }}>
-          <PdfTemplate ref={printRef} formData={formData} user={user} />
-        </div>,
-        document.body
-      )}
+      {/* Hidden print template rendered off-screen to avoid CSS layout interference */}
+      <div style={{ position: 'fixed', top: 0, left: '200vw', width: '750px', zIndex: -1000, pointerEvents: 'none' }}>
+        <PdfTemplate ref={printRef} formData={{ ...formData, includeOpAssessment: formData.jenisNotam === 'NOTAM New' ? includeOpAssessment : false, targetFormNo: (formData.jenisNotam === 'NOTAM Replace' || formData.jenisNotam === 'NOTAM Cancel') && selectedExistingNotamId ? notams.find(n => n.id === selectedExistingNotamId)?.formNo : '' }} user={user} formNo={pdfFormNo} />
+      </div>
     </div>
   );
 }

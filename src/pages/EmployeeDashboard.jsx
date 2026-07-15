@@ -5,30 +5,45 @@ import PdfViewerModal from '../components/PdfViewerModal';
 
 export default function EmployeeDashboard() {
   const { notams } = useNotams();
-  const [activeTab, setActiveTab] = useState('terbit');
+  const [activeTab, setActiveTab] = useState('all');
   const [selectedNotam, setSelectedNotam] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
 
   const now = new Date();
 
-  const { terbitCount, incomingCount, filteredNotams } = useMemo(() => {
+  const { terbitCount, incomingCount, pastCount, filteredNotams } = useMemo(() => {
     let terbit = [];
     let incoming = [];
+    let past = [];
 
     notams.forEach(notam => {
       const formData = notam.formData || {};
       const startTime = new Date(formData.waktuMulai || notam.waktuMulai || notam.createdAt);
-      if (startTime <= now) {
+      const endTime = new Date(formData.waktuSelesai || notam.waktuSelesai || notam.createdAt);
+      
+      if (endTime < now) {
+        past.push(notam);
+      } else if (startTime <= now) {
         terbit.push(notam);
       } else {
         incoming.push(notam);
       }
     });
 
-    const source = activeTab === 'terbit' ? terbit : incoming;
+    const source = activeTab === 'all' ? notams : activeTab === 'terbit' ? terbit : activeTab === 'past' ? past : incoming;
+
+    // Apply type filter
+    let typeFiltered = source;
+    if (typeFilter !== 'all') {
+      typeFiltered = source.filter(notam => {
+        const jenisNotam = notam.formData?.jenisNotam || notam.jenis || '';
+        return jenisNotam === typeFilter;
+      });
+    }
 
     // Apply search filter
-    let filtered = source;
+    let filtered = typeFiltered;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       filtered = source.filter(notam => {
@@ -47,8 +62,8 @@ export default function EmployeeDashboard() {
 
     filtered = [...filtered].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-    return { terbitCount: terbit.length, incomingCount: incoming.length, filteredNotams: filtered };
-  }, [notams, activeTab, now, searchQuery]);
+    return { terbitCount: terbit.length, incomingCount: incoming.length, pastCount: past.length, filteredNotams: filtered };
+  }, [notams, activeTab, now, searchQuery, typeFilter]);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
@@ -68,7 +83,7 @@ export default function EmployeeDashboard() {
       </div>
 
       {/* Stat Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
         <div className="stat-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <span className="stat-title">Total Dokumen</span>
@@ -96,12 +111,44 @@ export default function EmployeeDashboard() {
           </div>
           <span className="stat-value">{incomingCount}</span>
         </div>
+        <div className="stat-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <span className="stat-title">Sudah Lewat</span>
+            <div style={{ padding: '0.5rem', backgroundColor: '#f3f4f6', borderRadius: '10px', color: '#6b7280' }}>
+              <Clock size={20} />
+            </div>
+          </div>
+          <span className="stat-value">{pastCount}</span>
+        </div>
       </div>
 
       {/* Main Card */}
-      <div className="card" style={{ padding: 0, overflow: 'hidden', minHeight: '500px' }}>
+      <div className="card" style={{ padding: 0, overflow: 'visible' }}>
         {/* Tabs */}
         <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0' }}>
+          <button
+            onClick={() => setActiveTab('all')}
+            style={{
+              flex: 1,
+              padding: '1rem',
+              backgroundColor: activeTab === 'all' ? 'white' : '#f8fafc',
+              border: 'none',
+              borderBottom: activeTab === 'all' ? '2.5px solid var(--primary)' : '2.5px solid transparent',
+              color: activeTab === 'all' ? 'var(--primary)' : 'var(--text-muted)',
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: 'Inter',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            <FileText size={16} />
+            Semua Surat
+            <span className="badge badge-blue" style={{ marginLeft: '4px' }}>{notams.length}</span>
+          </button>
           <button
             onClick={() => setActiveTab('terbit')}
             style={{
@@ -109,8 +156,8 @@ export default function EmployeeDashboard() {
               padding: '1rem',
               backgroundColor: activeTab === 'terbit' ? 'white' : '#f8fafc',
               border: 'none',
-              borderBottom: activeTab === 'terbit' ? '2.5px solid var(--primary)' : '2.5px solid transparent',
-              color: activeTab === 'terbit' ? 'var(--primary)' : 'var(--text-muted)',
+              borderBottom: activeTab === 'terbit' ? '2.5px solid #059669' : '2.5px solid transparent',
+              color: activeTab === 'terbit' ? '#059669' : 'var(--text-muted)',
               fontWeight: 600,
               cursor: 'pointer',
               fontFamily: 'Inter',
@@ -148,12 +195,36 @@ export default function EmployeeDashboard() {
             Surat Incoming
             <span className="badge badge-yellow" style={{ marginLeft: '4px' }}>{incomingCount}</span>
           </button>
+          <button
+            onClick={() => setActiveTab('past')}
+            style={{
+              flex: 1,
+              padding: '1rem',
+              backgroundColor: activeTab === 'past' ? 'white' : '#f8fafc',
+              border: 'none',
+              borderBottom: activeTab === 'past' ? '2.5px solid #6b7280' : '2.5px solid transparent',
+              color: activeTab === 'past' ? '#4b5563' : 'var(--text-muted)',
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: 'Inter',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            <Clock size={16} />
+            Sudah Lewat
+            <span className="badge" style={{ marginLeft: '4px', backgroundColor: '#f3f4f6', color: '#4b5563' }}>{pastCount}</span>
+          </button>
         </div>
 
-        {/* Search bar */}
-        <div style={{ padding: '1.25rem 2rem 0' }}>
+        {/* Search & Filter bar */}
+        <div style={{ padding: '1.25rem 2rem 0', display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <div style={{
             position: 'relative',
+            flex: 1,
             maxWidth: '400px'
           }}>
             <Search size={18} style={{
@@ -175,9 +246,22 @@ export default function EmployeeDashboard() {
                 borderRadius: '10px',
                 backgroundColor: '#f8fafc',
                 border: '1px solid #e2e8f0',
+                marginBottom: 0
               }}
             />
           </div>
+          
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="input-field"
+            style={{ width: '200px', marginBottom: 0, borderRadius: '10px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}
+          >
+            <option value="all">Semua Jenis</option>
+            <option value="NOTAM New">NOTAM New</option>
+            <option value="NOTAM Replace">NOTAM Replace</option>
+            <option value="NOTAM Cancel">NOTAM Cancel</option>
+          </select>
         </div>
 
         {/* Content */}
@@ -265,9 +349,23 @@ export default function EmployeeDashboard() {
                           </div>
                         </div>
                       </div>
-                      <span className={`badge ${badgeClass}`} style={{ fontSize: '0.68rem', padding: '3px 8px' }}>
-                        {jenisNotam.replace('NOTAM ', '')}
-                      </span>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                        <span className={`badge ${badgeClass}`} style={{ fontSize: '0.68rem', padding: '3px 8px' }}>
+                          {jenisNotam.replace('NOTAM ', '')}
+                        </span>
+                        
+                        <span className={`badge ${
+                          new Date(waktuSelesai) < now ? 'badge-red' : 
+                          new Date(waktuMulai) <= now ? 'badge-green' : 'badge-yellow'
+                        }`} style={{ fontSize: '0.68rem', padding: '3px 8px' }}>
+                          {new Date(waktuSelesai) < now ? 'Selesai' : new Date(waktuMulai) <= now ? 'Terbit' : 'Incoming'}
+                        </span>
+                        {formData.targetFormNo && (
+                          <span style={{ fontSize: '0.65rem', color: isReplace ? '#d97706' : '#dc2626', marginTop: '4px', fontWeight: 500 }}>
+                            👉 {isReplace ? 'Replacing' : 'Canceling'}: {formData.targetFormNo}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Card body */}
