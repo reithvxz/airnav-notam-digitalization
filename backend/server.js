@@ -3,7 +3,7 @@ const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { initDb, User, Notam } = require('./database');
+const { initDb, User, Notam, Briefing } = require('./database');
 
 const app = express();
 app.use(cors());
@@ -139,6 +139,88 @@ app.post('/api/notams', async (req, res) => {
     res.json({ success: true, notam: responseData });
   } catch (err) {
     console.error("Error creating NOTAM:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Get All Users (for dropdown)
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await User.findAll({
+      attributes: ['id', 'initial', 'nama', 'jabatan', 'role', 'tanda_tangan']
+    });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Get All Briefings
+app.get('/api/briefings', async (req, res) => {
+  try {
+    const briefings = await Briefing.findAll({ order: [['createdAt', 'DESC']] });
+    const parsed = briefings.map(b => {
+      const data = b.toJSON();
+      data.checklistData = JSON.parse(data.checklistData);
+      data.incomingManager = JSON.parse(data.incomingManager);
+      data.outgoingManager = JSON.parse(data.outgoingManager);
+      return data;
+    });
+    res.json(parsed);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Get Single Briefing
+app.get('/api/briefings/:id', async (req, res) => {
+  try {
+    const briefing = await Briefing.findByPk(req.params.id);
+    if (!briefing) return res.status(404).json({ error: 'Not found' });
+    const data = briefing.toJSON();
+    data.checklistData = JSON.parse(data.checklistData);
+    data.incomingManager = JSON.parse(data.incomingManager);
+    data.outgoingManager = JSON.parse(data.outgoingManager);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Create Briefing
+app.post('/api/briefings', async (req, res) => {
+  try {
+    const { id, date, time, managerOnDuty, shift, checklistData, incomingManager, outgoingManager, createdBy } = req.body;
+    const newBriefing = await Briefing.create({
+      id,
+      date,
+      time,
+      managerOnDuty,
+      shift,
+      checklistData: JSON.stringify(checklistData),
+      incomingManager: JSON.stringify(incomingManager),
+      outgoingManager: JSON.stringify(outgoingManager),
+      createdBy
+    });
+    const responseData = newBriefing.toJSON();
+    responseData.checklistData = JSON.parse(responseData.checklistData);
+    responseData.incomingManager = JSON.parse(responseData.incomingManager);
+    responseData.outgoingManager = JSON.parse(responseData.outgoingManager);
+    res.json({ success: true, briefing: responseData });
+  } catch (err) {
+    console.error('Error creating briefing:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Delete Briefing
+app.delete('/api/briefings/:id', async (req, res) => {
+  try {
+    const briefing = await Briefing.findByPk(req.params.id);
+    if (!briefing) return res.status(404).json({ error: 'Not found' });
+    await briefing.destroy();
+    res.json({ success: true });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });

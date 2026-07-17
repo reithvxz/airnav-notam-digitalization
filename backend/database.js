@@ -85,10 +85,56 @@ const Notam = sequelize.define('Notam', {
 User.hasMany(Notam, { foreignKey: 'createdBy' });
 Notam.belongsTo(User, { foreignKey: 'createdBy' });
 
+// Define Briefing Model
+const Briefing = sequelize.define('Briefing', {
+  id: {
+    type: DataTypes.STRING,
+    primaryKey: true
+  },
+  date: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  time: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  managerOnDuty: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  shift: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  checklistData: {
+    type: DataTypes.TEXT, // JSON array of 13 checklist items
+    allowNull: false
+  },
+  incomingManager: {
+    type: DataTypes.TEXT, // JSON {initial, nama, ttd, time}
+    allowNull: false
+  },
+  outgoingManager: {
+    type: DataTypes.TEXT, // JSON {initial, nama, ttd, time}
+    allowNull: false
+  },
+  createdBy: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: User,
+      key: 'id'
+    }
+  }
+});
+
+User.hasMany(Briefing, { foreignKey: 'createdBy' });
+Briefing.belongsTo(User, { foreignKey: 'createdBy' });
+
 // Sync database function
 const initDb = async () => {
   await sequelize.sync(); // Creates tables if they don't exist
   console.log("Database synchronized");
 };
 
-module.exports = { sequelize, User, Notam, initDb };
+module.exports = { sequelize, User, Notam, Briefing, initDb };

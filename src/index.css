@@ -397,3 +397,36 @@ a {
 .items-center { align-items: center; }
 .gap-2 { gap: 0.5rem; }
 .gap-4 { gap: 1rem; }
+
+/* ── Briefing Checklist Table ─────────────────────── */
+.briefing-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+.briefing-table th {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 0.6rem 0.85rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #374151;
+  letter-spacing: 0.02em;
+}
+.briefing-table td {
+  border: 1px solid #e2e8f0;
+  padding: 0.55rem 0.85rem;
+  vertical-align: middle;
+  color: #1e293b;
+}
+.briefing-table tbody tr:hover {
+  background: #f8fafc;
+}
+.briefing-table tbody tr:nth-child(even) {
+  background: #fafafa;
+}
+.briefing-table tbody tr:nth-child(even):hover {
+  background: #f1f5f9;
+}
+

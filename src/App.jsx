@@ -7,6 +7,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import EmployeeDashboard from './pages/EmployeeDashboard';
 import CreateNotam from './pages/CreateNotam';
 import AccountManagement from './pages/AccountManagement';
+import CreateBriefing from './pages/CreateBriefing';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRole, requireSuperAdmin }) => {
@@ -54,6 +55,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute allowedRole="admin" requireSuperAdmin={true}>
               <AccountManagement />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/admin/create-briefing" 
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <CreateBriefing />
             </ProtectedRoute>
           } 
         />

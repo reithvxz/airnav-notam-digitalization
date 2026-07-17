@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNotams } from '../context/NotamContext';
 import { Link } from 'react-router-dom';
-import { Plus, FileText, CheckCircle, Clock, TrendingUp, Activity, MapPin, Calendar } from 'lucide-react';
+import { Plus, FileText, CheckCircle, Clock, TrendingUp, Activity, MapPin, CheckSquare, Trash2, Calendar } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import PdfViewerModal from '../components/PdfViewerModal';
+import BriefingViewerModal from '../components/BriefingViewerModal';
 
 const PIE_COLORS = ['#3b82f6', '#f59e0b', '#ef4444', '#64748b'];
 
@@ -27,12 +28,34 @@ export default function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [jenisFilter, setJenisFilter] = useState('all');
   const [selectedNotam, setSelectedNotam] = useState(null);
+  const [mainTab, setMainTab] = useState('notam'); // 'notam' | 'briefing'
+  const [briefings, setBriefings] = useState([]);
+  const [selectedBriefing, setSelectedBriefing] = useState(null);
+
+  useEffect(() => {
+    if (mainTab === 'briefing') {
+      fetch('http://localhost:3000/api/briefings')
+        .then(r => r.json())
+        .then(data => setBriefings(Array.isArray(data) ? data : []))
+        .catch(() => setBriefings([]));
+    }
+  }, [mainTab]);
+
+  const handleDeleteBriefing = async (id, e) => {
+    e.stopPropagation();
+    if (!window.confirm('Hapus briefing ini?')) return;
+    await fetch(`http://localhost:3000/api/briefings/${id}`, { method: 'DELETE' });
+    setBriefings(prev => prev.filter(b => b.id !== id));
+  };
 
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
 
   const { activeNotams, incomingNotams, pastNotams, completedThisMonth, thisMonthCount, filteredNotams, chartData, pieData, statusPieData, recentActivity } = useMemo(() => {
+    const _now = new Date();
+    const _month = _now.getMonth();
+    const _year = _now.getFullYear();
     let active = [];
     let incoming = [];
     let past = [];
@@ -53,30 +76,24 @@ export default function AdminDashboard() {
       const endTime = new Date(formData.waktuSelesai || notam.waktuSelesai || notam.createdAt);
       const createdDate = new Date(notam.createdAt);
 
-      if (endTime < now) {
+      if (endTime < _now) {
         past.push(notam);
-      } else if (startTime <= now) {
+      } else if (startTime <= _now) {
         active.push(notam);
       } else {
         incoming.push(notam);
       }
 
-      // Completed this month
-      if (endTime < now && createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear) {
+      if (endTime < _now && createdDate.getMonth() === _month && createdDate.getFullYear() === _year) {
         completedMonth++;
       }
-
-      // Created this month
-      if (createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear) {
+      if (createdDate.getMonth() === _month && createdDate.getFullYear() === _year) {
         monthCount++;
       }
-
-      // Chart data
-      if (createdDate.getFullYear() === currentYear) {
+      if (createdDate.getFullYear() === _year) {
         monthsCount[createdDate.getMonth()]++;
       }
 
-      // Pie data
       const jenisNotam = formData.jenisNotam || notam.jenis || '';
       if (jenisNotam === 'NOTAM New') newCount++;
       else if (jenisNotam === 'NOTAM Replace') replaceCount++;
@@ -101,7 +118,6 @@ export default function AdminDashboard() {
     ].filter(d => d.value > 0);
 
     let filtered = notams;
-    
     if (statusFilter === 'active') filtered = active;
     else if (statusFilter === 'incoming') filtered = incoming;
     else if (statusFilter === 'past') filtered = past;
@@ -109,10 +125,8 @@ export default function AdminDashboard() {
     if (jenisFilter !== 'all') {
       filtered = filtered.filter(n => (n.formData?.jenisNotam || n.jenis) === jenisFilter);
     }
-    
     filtered = [...filtered].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-    // Recent activity: last 6
     const recent = [...notams].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 6);
 
     return {
@@ -127,7 +141,7 @@ export default function AdminDashboard() {
       statusPieData: statusPie,
       recentActivity: recent
     };
-  }, [notams, statusFilter, jenisFilter, now, currentMonth, currentYear]);
+  }, [notams, statusFilter, jenisFilter]);
 
   const statCards = [
     {
@@ -206,11 +220,54 @@ export default function AdminDashboard() {
           <h1 className="page-title">Dashboard Admin</h1>
           <p className="page-subtitle">Ringkasan aktivitas dan manajemen NOTAM</p>
         </div>
-        <Link to="/admin/create-notam" className="btn btn-primary">
-          <Plus size={20} />
-          Buat NOTAM Baru
-        </Link>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <Link to="/admin/create-notam" className="btn btn-primary">
+            <Plus size={20} />
+            Buat NOTAM Baru
+          </Link>
+          <Link to="/admin/create-briefing" className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <CheckSquare size={18} />
+            Buat Briefing
+          </Link>
+        </div>
       </div>
+
+      {/* Main Tab Switch */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '2px solid #e2e8f0', paddingBottom: 0 }}>
+        <button
+          onClick={() => setMainTab('notam')}
+          style={{
+            padding: '0.6rem 1.25rem', border: 'none', background: 'transparent',
+            fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
+            borderBottom: mainTab === 'notam' ? '2px solid #2563eb' : '2px solid transparent',
+            color: mainTab === 'notam' ? '#2563eb' : '#64748b',
+            marginBottom: -2, transition: 'all 0.2s',
+          }}
+        >
+          <FileText size={15} style={{ marginRight: 6, verticalAlign: 'middle' }} />
+          NOTAM
+        </button>
+        <button
+          onClick={() => setMainTab('briefing')}
+          style={{
+            padding: '0.6rem 1.25rem', border: 'none', background: 'transparent',
+            fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
+            borderBottom: mainTab === 'briefing' ? '2px solid #2563eb' : '2px solid transparent',
+            color: mainTab === 'briefing' ? '#2563eb' : '#64748b',
+            marginBottom: -2, transition: 'all 0.2s',
+          }}
+        >
+          <CheckSquare size={15} style={{ marginRight: 6, verticalAlign: 'middle' }} />
+          Pre-Shift Briefing
+          {briefings.length > 0 && (
+            <span style={{ marginLeft: 6, background: '#2563eb', color: 'white', borderRadius: 10, fontSize: '0.7rem', padding: '1px 7px' }}>
+              {briefings.length}
+            </span>
+          )}
+        </button>
+      </div>
+      {/* ── NOTAM TAB CONTENT ──────────────────────────── */}
+      {mainTab === 'notam' && (<>
 
       {/* Stat Cards */}
       <div className="stat-cards" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
@@ -555,8 +612,85 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      </>)} {/* end mainTab === 'notam' */}
+
+      {/* ── BRIEFING TAB ─────────────────────────── */}
+      {mainTab === 'briefing' && (
+        <div className="card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>
+              Daftar Pre-Shift Briefing
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'normal', marginLeft: 8 }}>({briefings.length} dokumen)</span>
+            </h3>
+            <Link to="/admin/create-briefing" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', padding: '0.45rem 1rem' }}>
+              <Plus size={15} /> Buat Briefing Baru
+            </Link>
+          </div>
+
+          {briefings.length === 0 ? (
+            <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+              <CheckSquare size={40} style={{ opacity: 0.15, marginBottom: '0.5rem' }} />
+              <p>Belum ada Pre-Shift Briefing Checklist.</p>
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Tanggal</th>
+                    <th>Waktu</th>
+                    <th>Shift</th>
+                    <th>Incoming Manager</th>
+                    <th>Outgoing Manager</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {briefings.map(b => (
+                    <tr key={b.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedBriefing(b)}>
+                      <td style={{ fontWeight: 600 }}>{b.date}</td>
+                      <td>{b.time}</td>
+                      <td>
+                        <span className="badge badge-blue" style={{ fontSize: '0.72rem' }}>{b.shift}</span>
+                      </td>
+                      <td>
+                        <div style={{ fontSize: '0.85rem' }}>{b.incomingManager?.nama}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{b.incomingManager?.initial}</div>
+                      </td>
+                      <td>
+                        <div style={{ fontSize: '0.85rem' }}>{b.outgoingManager?.nama}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{b.outgoingManager?.initial}</div>
+                      </td>
+                      <td style={{ display: 'flex', gap: 6 }}>
+                        <button
+                          className="btn btn-secondary"
+                          style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
+                          onClick={(e) => { e.stopPropagation(); setSelectedBriefing(b); }}
+                        >
+                          Lihat PDF
+                        </button>
+                        <button
+                          className="btn"
+                          style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                          onClick={(e) => handleDeleteBriefing(b.id, e)}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       {selectedNotam && (
         <PdfViewerModal notam={selectedNotam} onClose={() => setSelectedNotam(null)} />
+      )}
+      {selectedBriefing && (
+        <BriefingViewerModal briefing={selectedBriefing} onClose={() => setSelectedBriefing(null)} />
       )}
     </div>
   );
