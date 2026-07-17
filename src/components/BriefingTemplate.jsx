@@ -34,7 +34,7 @@ const s = {
     marginBottom: 24,
   },
   infoTd: {
-    border: '1.5px solid #000',
+    border: '1px solid #000',
     padding: '6px 12px',
   },
   infoLabel: {
@@ -55,7 +55,7 @@ const s = {
     marginBottom: 28,
   },
   th: {
-    border: '1.5px solid #000',
+    border: '1px solid #000',
     padding: '8px 10px',
     fontWeight: 'bold',
     textAlign: 'center',
@@ -63,7 +63,7 @@ const s = {
     fontSize: 11.5,
   },
   td: {
-    border: '1.5px solid #000',
+    border: '1px solid #000',
     padding: '7px 10px',
     verticalAlign: 'middle',
     fontSize: 11.5,
@@ -73,7 +73,7 @@ const s = {
     width: '100%',
   },
   sigTh: {
-    border: '1.5px solid #000',
+    border: '1px solid #000',
     padding: '8px 10px',
     fontWeight: 'bold',
     textAlign: 'center',
@@ -81,7 +81,7 @@ const s = {
     fontSize: 11.5,
   },
   sigTd: {
-    border: '1.5px solid #000',
+    border: '1px solid #000',
     padding: '8px 10px',
     textAlign: 'center',
     verticalAlign: 'middle',
@@ -107,13 +107,11 @@ const BriefingTemplate = forwardRef(function BriefingTemplate({ briefing }, ref)
       `}</style>
 
       {/* ── HEADER ─────────────────────────────────────── */}
-      <div style={s.header}>
-        <div>
-          <div style={s.title}>PRE-SHIFT BRIEFING CHECKLIST</div>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <img src="/logo.png" alt="AirNav Indonesia" style={s.logoImg} />
-          <div style={{ fontSize: 9.5, color: '#555', marginTop: 4, fontWeight: 'bold' }}>AirNav Indonesia</div>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
+        <img src="/logo.png" alt="AirNav Indonesia" style={{ width: 90, objectFit: 'contain' }} />
+        <div style={{ flex: 1, textAlign: 'center', paddingRight: 90 }}>
+          <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: 1.2, color: '#0f172a' }}>PRE-SHIFT BRIEFING CHECKLIST</div>
+          <div style={{ fontSize: 12, fontWeight: 'bold', color: '#475569', marginTop: 5, letterSpacing: 0.5 }}>PERUSAHAAN UMUM (PERUM) LPPNPI - AIRNAV INDONESIA</div>
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Calendar, Clock, ChevronDown, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
-function useClickOutside(ref, handler) {
+export function useClickOutside(ref, handler) {
   useEffect(() => {
     const listener = (event) => {
       if (!ref.current || ref.current.contains(event.target)) return;
@@ -13,7 +13,7 @@ function useClickOutside(ref, handler) {
 }
 
 // ── Custom Date Picker ────────────────────────────────────────────────────────
-export function CustomDatePicker({ value, onChange, label }) {
+export function CustomDatePicker({ value, onChange, label, minDate }) {
   const [isOpen, setIsOpen] = useState(false);
   const [viewDate, setViewDate] = useState(value ? new Date(value) : new Date());
   const ref = useRef();
@@ -44,7 +44,7 @@ export function CustomDatePicker({ value, onChange, label }) {
   const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={ref} style={{ position: 'relative', zIndex: isOpen ? 50 : 1 }}>
       {label && <label style={{ display: 'block', fontWeight: 600, fontSize: '0.78rem', color: '#475569', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</label>}
       
       <div 
@@ -77,17 +77,29 @@ export function CustomDatePicker({ value, onChange, label }) {
             {Array.from({ length: daysInMonth }).map((_, i) => {
               const day = i + 1;
               const isSelected = value && parseInt(value.split('-')[2]) === day && parseInt(value.split('-')[1]) === viewDate.getMonth() + 1 && parseInt(value.split('-')[0]) === viewDate.getFullYear();
+              const currentDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
+              currentDate.setHours(0,0,0,0);
+              
+              let isDisabled = false;
+              if (minDate) {
+                const min = new Date(minDate);
+                min.setHours(0,0,0,0);
+                if (currentDate < min) isDisabled = true;
+              }
+
               return (
                 <button
                   key={day}
                   type="button"
+                  disabled={isDisabled}
                   onClick={() => handleSelect(day)}
                   style={{
                     background: isSelected ? '#2563eb' : 'transparent',
-                    color: isSelected ? 'white' : '#1e293b',
+                    color: isDisabled ? '#cbd5e1' : (isSelected ? 'white' : '#1e293b'),
                     border: 'none', borderRadius: 6, padding: '6px 0',
                     fontSize: '0.85rem', fontWeight: isSelected ? 700 : 500,
-                    cursor: 'pointer'
+                    cursor: isDisabled ? 'not-allowed' : 'pointer',
+                    opacity: isDisabled ? 0.5 : 1
                   }}
                 >
                   {day}
@@ -114,7 +126,7 @@ export function CustomTimePicker({ value, onChange, label }) {
   const minutes = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={ref} style={{ position: 'relative', zIndex: isOpen ? 50 : 1 }}>
       {label && <label style={{ display: 'block', fontWeight: 600, fontSize: '0.78rem', color: '#475569', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</label>}
       
       <div 
@@ -171,7 +183,7 @@ export function CustomSelect({ value, onChange, options, placeholder, label }) {
   const selectedOption = options.find(o => o.value === value);
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={ref} style={{ position: 'relative', zIndex: isOpen ? 50 : 1 }}>
       {label && <label style={{ display: 'block', fontWeight: 600, fontSize: '0.78rem', color: '#475569', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</label>}
       
       <div 

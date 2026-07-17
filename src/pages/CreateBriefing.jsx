@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Save, ArrowLeft, Plus, Trash2, User, CheckSquare } from 'lucide-react';
-import { CustomDatePicker, CustomTimePicker, CustomSelect } from '../components/CustomPickers';
+import { Save, ArrowLeft, Plus, Trash2, User, CheckSquare, Check } from 'lucide-react';
+import { CustomDatePicker, CustomTimePicker, CustomSelect, useClickOutside } from '../components/CustomPickers';
 
 const CHECKLIST_ITEMS = [
   { no: 1,  subject: 'Personnel Attendance',         details: 'Ensure all ATC and operational personnel are present' },
@@ -44,20 +44,87 @@ function initChecklist() {
 
 // ── Custom Pickers imported from ../components/CustomPickers ──
 
+// ── Custom Checklist Dropdown ─────────────────────────────────
+function ChecklistDropdown({ checked, onChange, isTextMode, onSelectKeterangan }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef();
+  useClickOutside(ref, () => setIsOpen(false));
+
+  return (
+    <div ref={ref} style={{ position: 'relative', width: '100%' }}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: 8,
+          background: checked ? (isTextMode ? '#f8fafc' : '#f0fdf4') : 'white', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: checked ? (isTextMode ? '#0f172a' : '#16a34a') : '#475569', transition: 'all 0.2s',
+          fontWeight: 700, fontSize: isTextMode ? '0.85rem' : '1rem', outline: 'none'
+        }}
+      >
+        {checked ? (isTextMode ? 'BY SUPERVISOR' : <Check size={22} strokeWidth={3} />) : '✎ Keterangan'}
+      </button>
+
+      {isOpen && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4,
+          background: 'white', borderRadius: 10, border: '1px solid #e2e8f0',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 50, overflow: 'hidden'
+        }}>
+          <button
+            type="button"
+            onClick={() => { onChange(true); setIsOpen(false); }}
+            style={{
+              width: '100%', padding: '0.65rem', border: 'none', background: 'transparent',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              cursor: 'pointer', borderBottom: '1px solid #f1f5f9', fontWeight: 700,
+              color: isTextMode ? '#0f172a' : '#16a34a', fontSize: '0.85rem', transition: 'background 0.1s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
+            {isTextMode ? 'BY SUPERVISOR' : <><Check size={18} strokeWidth={3} /> Centang</>}
+          </button>
+          <button
+            type="button"
+            onClick={() => { onChange(false); setIsOpen(false); onSelectKeterangan(); }}
+            style={{
+              width: '100%', padding: '0.65rem', border: 'none', background: 'transparent',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              cursor: 'pointer', fontWeight: 600, color: '#475569', fontSize: '0.85rem',
+              transition: 'background 0.1s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
+            ✎ Keterangan
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Manager Card ──────────────────────────────────────────────
-function ManagerCard({ role, users, selectedInitial, onChange, time, onTimeChange, disabledInitial, accentColor }) {
+function ManagerCard({ role, users, selectedInitial, onChange, time, onTimeChange, disabledInitial, accentColor, isLocked }) {
   const selectedUser = users.find(u => u.initial === selectedInitial);
   return (
     <div style={{
       border: `1.5px solid ${accentColor}30`,
       borderRadius: 14,
-      overflow: 'hidden',
       background: 'white',
-      boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
+      boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+      opacity: isLocked ? 0.6 : 1,
+      pointerEvents: isLocked ? 'none' : 'auto',
+      filter: isLocked ? 'grayscale(100%)' : 'none',
+      transition: 'all 0.3s'
     }}>
       <div style={{
         background: `linear-gradient(135deg, ${accentColor}, ${accentColor}cc)`,
         padding: '0.85rem 1.1rem',
+        borderTopLeftRadius: 13,
+        borderTopRightRadius: 13,
         display: 'flex', alignItems: 'center', gap: 8
       }}>
         <User size={16} color="white" />
@@ -116,6 +183,7 @@ export default function CreateBriefing() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
   const today = new Date().toISOString().split('T')[0];
   const [date, setDate] = useState(today);
@@ -155,12 +223,17 @@ export default function CreateBriefing() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setAttemptedSubmit(true);
     if (!incomingInitial) return setError('Incoming Manager harus dipilih');
     if (!outgoingInitial) return setError('Outgoing Manager harus dipilih');
     if (incomingInitial === outgoingInitial) return setError('Incoming dan Outgoing Manager harus berbeda');
 
     const inUser = users.find(u => u.initial === incomingInitial);
     const outUser = users.find(u => u.initial === outgoingInitial);
+
+    // Validate extra items
+    const hasEmptyExtras = extraItems.some(it => !it.subject.trim() || !it.details.trim() || (!it.checked && (!it.remarks || !it.remarks.trim())));
+    if (hasEmptyExtras) return;
 
     // Build final checklist with extras
     const finalChecklist = [
@@ -172,7 +245,7 @@ export default function CreateBriefing() {
         remarks: item.isTextMode ? item.remarks : (!item.checked ? item.remarks : ''),
       })),
       ...extraItems.map((it, i) => ({
-        no: `13.${i + 1}`,
+        no: 13 + i,
         subject: it.subject,
         details: it.details,
         checked: it.checked,
@@ -212,45 +285,31 @@ export default function CreateBriefing() {
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>
 
       {/* ── TOP BAR ────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.75rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', padding: '0 0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
           <button
             onClick={() => navigate(-1)}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f1f5f9', border: 'none', borderRadius: 8, padding: '0.5rem 1rem', cursor: 'pointer', color: '#475569', fontWeight: 600 }}
+            title="Kembali"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44,
+              background: 'white', border: '1px solid #e2e8f0', borderRadius: '50%',
+              cursor: 'pointer', color: '#475569', boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.transform = 'scale(1.05)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'white'; e.currentTarget.style.transform = 'scale(1)'; }}
           >
-            <ArrowLeft size={16} /> Kembali
+            <ArrowLeft size={20} />
           </button>
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <CheckSquare size={22} color="#2563eb" />
+            <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <CheckSquare size={24} color="#2563eb" />
               Form Pre-Shift Briefing
             </h1>
-            <p style={{ margin: 0, fontSize: '0.82rem', color: '#64748b' }}>Pre-Shift Briefing Checklist — AirNav Indonesia</p>
+            <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>Checklist & Validasi Kesiapan Operasional ATC</p>
           </div>
         </div>
-        <button
-          form="briefing-form"
-          type="submit"
-          disabled={loading}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            background: loading ? '#94a3b8' : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
-            color: 'white', border: 'none', borderRadius: 10,
-            padding: '0.65rem 1.4rem', fontWeight: 700, fontSize: '0.9rem',
-            cursor: loading ? 'not-allowed' : 'pointer',
-            boxShadow: '0 4px 12px rgba(37,99,235,0.3)',
-          }}
-        >
-          <Save size={16} />
-          {loading ? 'Menyimpan...' : 'Simpan Briefing'}
-        </button>
       </div>
-
-      {error && (
-        <div style={{ background: '#fff1f2', border: '1.5px solid #fda4af', borderRadius: 10, padding: '0.75rem 1rem', color: '#be123c', marginBottom: '1.25rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 8 }}>
-          ⚠️ {error}
-        </div>
-      )}
 
       <form id="briefing-form" onSubmit={handleSubmit} onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
 
@@ -265,7 +324,7 @@ export default function CreateBriefing() {
           <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr', gap: '1.25rem' }}>
             {/* Date */}
             <div>
-              <CustomDatePicker label="Tanggal" value={date} onChange={setDate} />
+              <CustomDatePicker label="Tanggal" value={date} onChange={setDate} minDate={today} />
               {date && (
                 <span style={{ fontSize: '0.75rem', color: '#2563eb', marginTop: 4, display: 'block', fontWeight: 600 }}>
                   📅 {formatDateID(date)}
@@ -308,152 +367,154 @@ export default function CreateBriefing() {
             </span>
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
+          <div style={{ overflow: 'visible' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.87rem' }}>
               <thead>
-                <tr style={{ background: '#f8fafc' }}>
-                  <th style={{ padding: '0.6rem 0.75rem', border: '1px solid #e2e8f0', textAlign: 'center', width: 42, fontSize: '0.78rem', fontWeight: 700, color: '#374151' }}>NO.</th>
-                  <th style={{ padding: '0.6rem 0.75rem', border: '1px solid #e2e8f0', width: 175, fontSize: '0.78rem', fontWeight: 700, color: '#374151' }}>SUBJECT</th>
-                  <th style={{ padding: '0.6rem 0.75rem', border: '1px solid #e2e8f0', fontSize: '0.78rem', fontWeight: 700, color: '#374151' }}>DETAILS</th>
-                  <th style={{ padding: '0.6rem 0.75rem', border: '1px solid #e2e8f0', width: 220, textAlign: 'center', fontSize: '0.78rem', fontWeight: 700, color: '#374151' }}>CHECKED / REMARKS</th>
+                <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
+                  <th style={{ padding: '0.8rem 0.5rem', textAlign: 'center', width: 42, fontSize: '0.78rem', fontWeight: 800, color: '#475569' }}>NO.</th>
+                  <th style={{ padding: '0.8rem 0.5rem', textAlign: 'left', width: 175, fontSize: '0.78rem', fontWeight: 800, color: '#475569' }}>SUBJECT</th>
+                  <th style={{ padding: '0.8rem 0.5rem', textAlign: 'left', fontSize: '0.78rem', fontWeight: 800, color: '#475569' }}>DETAILS</th>
+                  <th style={{ padding: '0.8rem 0.5rem', textAlign: 'center', width: 220, fontSize: '0.78rem', fontWeight: 800, color: '#475569' }}>CHECKED / REMARKS</th>
                 </tr>
               </thead>
               <tbody>
                 {checklist.map((item, idx) => (
-                  <tr key={item.no} style={{ background: idx % 2 === 0 ? 'white' : '#fafafa' }}>
-                    <td style={{ padding: '0.6rem 0.75rem', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 700 }}>{item.no}.</td>
-                    <td style={{ padding: '0.6rem 0.75rem', border: '1px solid #e2e8f0', fontWeight: 500 }}>{item.subject}</td>
-                    <td style={{ padding: '0.6rem 0.75rem', border: '1px solid #e2e8f0', color: '#475569', fontSize: '0.83rem' }}>{item.details}</td>
-                    <td style={{ padding: '0.5rem 0.75rem', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                  <tr key={item.no} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '0.7rem 0.5rem', textAlign: 'center', fontWeight: 700, color: '#64748b' }}>{item.no}.</td>
+                    <td style={{ padding: '0.7rem 0.5rem', fontWeight: 600, color: '#1e293b' }}>{item.subject}</td>
+                    <td style={{ padding: '0.7rem 0.5rem', color: '#475569', fontSize: '0.83rem', lineHeight: 1.4 }}>{item.details}</td>
+                    <td style={{ padding: '0.6rem 0.5rem', textAlign: 'center' }}>
                       {item.isTextMode ? (
-                        /* Item 10 — always text */
-                        <input
-                          type="text"
-                          value={item.remarks || ''}
-                          onChange={e => setRemarks(idx, e.target.value)}
-                          style={{ width: '100%', padding: '0.35rem 0.5rem', border: '1px solid #e2e8f0', borderRadius: 6, textAlign: 'center', fontSize: '0.83rem', boxSizing: 'border-box' }}
-                        />
-                      ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <input
-                            type="text"
-                            value={item.checked ? '' : (item.remarks || '')}
-                            onChange={e => {
-                              const val = e.target.value;
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <ChecklistDropdown
+                            checked={item.checked}
+                            isTextMode={true}
+                            onChange={(val) => {
                               setChecklist(prev => {
                                 const u = [...prev];
-                                u[idx] = { ...u[idx], checked: false, remarks: val };
+                                u[idx] = { ...u[idx], checked: val, remarks: val ? 'BY SUPERVISOR' : '' };
                                 return u;
                               });
                             }}
-                            placeholder={item.checked ? "Isi teks..." : "Keterangan..."}
-                            style={{ 
-                              flex: 1, padding: '0.35rem 0.5rem', 
-                              border: item.checked ? '1.5px solid #e2e8f0' : '1.5px solid #2563eb', 
-                              borderRadius: 6, fontSize: '0.82rem', boxSizing: 'border-box',
-                              background: item.checked ? '#f8fafc' : 'white',
-                              color: item.checked ? '#94a3b8' : '#1e293b'
-                            }}
+                            onSelectKeterangan={() => {}}
                           />
-                          <button
-                            type="button"
-                            onClick={() => {
+                          {!item.checked && (
+                            <input
+                              type="text"
+                              autoFocus
+                              value={item.remarks || ''}
+                              onChange={e => setRemarks(idx, e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } }}
+                              onFocus={(e) => { e.target.style.background = 'white'; e.target.style.border = '1px solid #3b82f6'; }}
+                              onBlur={(e) => { e.target.style.background = '#f8fafc'; e.target.style.border = '1px solid #cbd5e1'; }}
+                              placeholder="Ketik keterangan..."
+                              style={{ width: '100%', padding: '0.65rem 0.75rem', border: '1px solid #cbd5e1', borderRadius: 8, textAlign: 'center', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#f8fafc', transition: 'all 0.2s' }}
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <ChecklistDropdown
+                            checked={item.checked}
+                            isTextMode={false}
+                            onChange={(val) => {
                               setChecklist(prev => {
                                 const u = [...prev];
-                                u[idx] = { ...u[idx], checked: true, remarks: '' };
+                                u[idx] = { ...u[idx], checked: val, remarks: val ? '' : u[idx].remarks };
                                 return u;
                               });
                             }}
-                            title="Format Centang (V)"
-                            style={{ 
-                              background: item.checked ? '#22c55e' : '#f1f5f9', 
-                              border: 'none', borderRadius: 6, padding: '0.35rem 0.7rem', 
-                              cursor: 'pointer', 
-                              color: item.checked ? 'white' : '#94a3b8', 
-                              fontWeight: 800, fontSize: '0.9rem', flexShrink: 0,
-                              transition: 'all 0.2s'
-                            }}
-                          >
-                            ✓
-                          </button>
+                            onSelectKeterangan={() => {}}
+                          />
+                          {!item.checked && (
+                            <input
+                              type="text"
+                              autoFocus
+                              value={item.remarks || ''}
+                              onChange={e => setRemarks(idx, e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } }}
+                              onFocus={(e) => { e.target.style.background = 'white'; e.target.style.border = '1px solid #3b82f6'; }}
+                              onBlur={(e) => { e.target.style.background = '#f8fafc'; e.target.style.border = '1px solid #cbd5e1'; }}
+                              placeholder="Ketik keterangan..."
+                              style={{ width: '100%', padding: '0.65rem 0.75rem', border: '1px solid #cbd5e1', borderRadius: 8, textAlign: 'center', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#f8fafc', transition: 'all 0.2s' }}
+                            />
+                          )}
                         </div>
                       )}
                     </td>
                   </tr>
                 ))}
-
                 {/* ── Extra "Others" rows ── */}
-                {extraItems.map((item, i) => (
-                  <tr key={item.id} style={{ background: '#fffbeb' }}>
-                    <td style={{ padding: '0.5rem 0.75rem', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 700, color: '#d97706' }}>+</td>
-                    <td style={{ padding: '0.4rem 0.5rem', border: '1px solid #e2e8f0' }}>
+                {extraItems.map((item, i) => {
+                  const errSub = attemptedSubmit && !item.subject.trim();
+                  const errDet = attemptedSubmit && !item.details.trim();
+                  const errRem = attemptedSubmit && !item.checked && (!item.remarks || !item.remarks.trim());
+                  return (
+                  <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9', background: '#fffbeb' }}>
+                    <td style={{ padding: '0.6rem 0.5rem', textAlign: 'center', fontWeight: 700, color: '#d97706' }}>+</td>
+                    <td style={{ padding: '0.6rem 0.5rem' }}>
                       <input
                         type="text"
                         value={item.subject}
                         onChange={e => updateExtra(item.id, 'subject', e.target.value)}
-                        placeholder="Subject baru..."
-                        style={{ width: '100%', padding: '0.35rem 0.5rem', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: '0.83rem', boxSizing: 'border-box' }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } }}
+                        onFocus={(e) => { e.target.style.background = 'white'; e.target.style.border = `1px solid ${errSub ? '#ef4444' : '#fde68a'}`; }}
+                        onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.border = `1px solid ${errSub ? '#ef4444' : 'transparent'}`; }}
+                        placeholder={errSub ? "Subject wajib diisi!" : "Subject baru..."}
+                        style={{ width: '100%', padding: '0.45rem 0.6rem', border: `1px solid ${errSub ? '#ef4444' : '#fde68a'}`, borderRadius: 8, fontSize: '0.85rem', outline: 'none', background: errSub ? '#fef2f2' : 'white', fontWeight: 600, color: errSub ? '#b91c1c' : '#1e293b', transition: 'all 0.2s' }}
                       />
                     </td>
-                    <td style={{ padding: '0.4rem 0.5rem', border: '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '0.6rem 0.5rem' }}>
                       <input
                         type="text"
                         value={item.details}
                         onChange={e => updateExtra(item.id, 'details', e.target.value)}
-                        placeholder="Details..."
-                        style={{ width: '100%', padding: '0.35rem 0.5rem', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: '0.83rem', boxSizing: 'border-box' }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } }}
+                        onFocus={(e) => { e.target.style.background = 'white'; e.target.style.border = `1px solid ${errDet ? '#ef4444' : '#fde68a'}`; }}
+                        onBlur={(e) => { e.target.style.background = 'transparent'; e.target.style.border = `1px solid ${errDet ? '#ef4444' : 'transparent'}`; }}
+                        placeholder={errDet ? "Details wajib diisi!" : "Keterangan..."}
+                        style={{ width: '100%', padding: '0.45rem 0.6rem', border: `1px solid ${errDet ? '#ef4444' : '#fde68a'}`, borderRadius: 8, fontSize: '0.85rem', outline: 'none', background: errDet ? '#fef2f2' : 'white', color: errDet ? '#b91c1c' : '#475569', transition: 'all 0.2s' }}
                       />
                     </td>
-                    <td style={{ padding: '0.4rem 0.5rem', border: '1px solid #e2e8f0' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <input
-                            type="text"
-                            value={item.checked ? '' : (item.remarks || '')}
-                            onChange={e => {
-                              updateExtra(item.id, 'checked', false);
-                              updateExtra(item.id, 'remarks', e.target.value);
+                    <td style={{ padding: '0.6rem 0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <ChecklistDropdown
+                            checked={item.checked}
+                            isTextMode={false}
+                            onChange={(val) => {
+                              updateExtra(item.id, 'checked', val);
+                              updateExtra(item.id, 'remarks', val ? '' : item.remarks);
                             }}
-                            placeholder={item.checked ? "Isi teks..." : "Keterangan..."}
-                            style={{ 
-                              flex: 1, padding: '0.35rem 0.5rem', 
-                              border: item.checked ? '1.5px solid #e2e8f0' : '1.5px solid #2563eb', 
-                              borderRadius: 6, fontSize: '0.82rem', boxSizing: 'border-box',
-                              background: item.checked ? '#f8fafc' : 'white',
-                              color: item.checked ? '#94a3b8' : '#1e293b'
-                            }}
+                            onSelectKeterangan={() => {}}
                           />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              updateExtra(item.id, 'checked', true);
-                              updateExtra(item.id, 'remarks', '');
-                            }}
-                            title="Format Centang (V)"
-                            style={{ 
-                              background: item.checked ? '#22c55e' : '#f1f5f9', 
-                              border: 'none', borderRadius: 6, padding: '0.35rem 0.7rem', 
-                              cursor: 'pointer', 
-                              color: item.checked ? 'white' : '#94a3b8', 
-                              fontWeight: 800, fontSize: '0.9rem', flexShrink: 0,
-                              transition: 'all 0.2s'
-                            }}
-                          >
-                            ✓
-                          </button>
+                          {!item.checked && (
+                            <input
+                              type="text"
+                              autoFocus
+                              value={item.remarks || ''}
+                              onChange={e => updateExtra(item.id, 'remarks', e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } }}
+                              onFocus={(e) => { e.target.style.background = 'white'; e.target.style.border = `1px solid ${errRem ? '#ef4444' : '#3b82f6'}`; }}
+                              onBlur={(e) => { e.target.style.background = errRem ? '#fef2f2' : '#f8fafc'; e.target.style.border = `1px solid ${errRem ? '#ef4444' : '#cbd5e1'}`; }}
+                              placeholder={errRem ? "Wajib diisi!" : "Ketik keterangan..."}
+                              style={{ width: '100%', padding: '0.65rem 0.75rem', border: `1px solid ${errRem ? '#ef4444' : '#cbd5e1'}`, borderRadius: 8, textAlign: 'center', fontSize: '0.85rem', fontWeight: 700, color: errRem ? '#b91c1c' : '#0f172a', outline: 'none', boxSizing: 'border-box', background: errRem ? '#fef2f2' : '#f8fafc', transition: 'all 0.2s' }}
+                            />
+                          )}
                         </div>
-
                         <button
                           type="button"
                           onClick={() => removeExtra(item.id)}
-                          style={{ background: '#fee2e2', border: 'none', borderRadius: 6, padding: '0.35rem 0.45rem', cursor: 'pointer', color: '#dc2626', flexShrink: 0 }}
+                          title="Hapus baris"
+                          style={{ background: '#fee2e2', border: 'none', borderRadius: 8, padding: '0.55rem', cursor: 'pointer', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                         >
-                          <Trash2 size={13} />
+                          <Trash2 size={20} />
                         </button>
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -501,6 +562,7 @@ export default function CreateBriefing() {
               onTimeChange={setOutgoingTime}
               disabledInitial={incomingInitial}
               accentColor="#7c3aed"
+              isLocked={!incomingInitial}
             />
           </div>
           {incomingInitial && outgoingInitial && incomingInitial === outgoingInitial && (
@@ -508,6 +570,32 @@ export default function CreateBriefing() {
               ⚠️ Incoming dan Outgoing Manager tidak boleh sama
             </div>
           )}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem' }}>
+          <div>
+            {error && (
+              <div style={{ background: '#fff1f2', border: '1.5px solid #fda4af', borderRadius: 10, padding: '0.65rem 1rem', color: '#be123c', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                ⚠️ {error}
+              </div>
+            )}
+          </div>
+          <button
+            form="briefing-form"
+            type="submit"
+            disabled={loading}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              background: loading ? '#94a3b8' : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+              color: 'white', border: 'none', borderRadius: 10,
+              padding: '0.8rem 2rem', fontWeight: 700, fontSize: '1rem',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              boxShadow: '0 4px 12px rgba(37,99,235,0.3)',
+            }}
+          >
+            <Save size={18} />
+            {loading ? 'Menyimpan...' : 'Simpan Briefing'}
+          </button>
         </div>
 
       </form>
