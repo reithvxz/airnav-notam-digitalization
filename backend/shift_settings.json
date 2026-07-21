@@ -1,0 +1,12 @@
+{
+  "preshift": {
+    "PAGI": { "time": "22.30 UTC", "incoming": "23.30 UTC", "outgoing": "00.00 UTC" },
+    "SIANG": { "time": "05.00 UTC", "incoming": "05.30 UTC", "outgoing": "06.00 UTC" },
+    "MALAM": { "time": "11.30 UTC", "incoming": "11.30 UTC", "outgoing": "12.00 UTC" }
+  },
+  "postshift": {
+    "PAGI": { "time": "05.30 UTC", "incoming": "05.30 UTC", "outgoing": "06.00 UTC" },
+    "SIANG": { "time": "12.00 UTC", "incoming": "11.30 UTC", "outgoing": "12.00 UTC" },
+    "MALAM": { "time": "23.00 UTC", "incoming": "23.30 UTC", "outgoing": "00.00 UTC" }
+  }
+}

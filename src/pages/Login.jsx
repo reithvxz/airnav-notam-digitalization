@@ -75,7 +75,7 @@ export default function Login() {
           />
         </div>
         
-        <h1 className="login-title">AirNav NOTAM System</h1>
+        <h1 className="login-title">AirNav Operations Portal</h1>
         <p className="login-subtitle">Masuk untuk mengelola dokumen NOTAM digital</p>
 
         {error && (

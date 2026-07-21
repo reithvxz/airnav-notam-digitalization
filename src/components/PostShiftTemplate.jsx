@@ -89,10 +89,11 @@ const s = {
   },
 };
 
-const BriefingTemplate = forwardRef(function BriefingTemplate({ briefing }, ref) {
-  if (!briefing) return null;
+const thStyle = { ...s.th };
+const tdStyle = { ...s.td };
 
-  const { date, time, shift, checklistData = [], incomingManager, outgoingManager } = briefing;
+const PostShiftTemplate = forwardRef(({ postshift }, ref) => {
+  if (!postshift) return null;
 
   return (
     <div ref={ref} className="briefing-template-root" style={s.root}>
@@ -110,7 +111,7 @@ const BriefingTemplate = forwardRef(function BriefingTemplate({ briefing }, ref)
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
         <img src="/logo.png" alt="AirNav Indonesia" style={{ width: 90, objectFit: 'contain' }} />
         <div style={{ flex: 1, textAlign: 'center', paddingRight: 90 }}>
-          <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: 1.2, color: '#0f172a' }}>PRE-SHIFT BRIEFING CHECKLIST</div>
+          <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: 1.2, color: '#0f172a' }}>POST-SHIFT REVIEW CHECKLIST</div>
           <div style={{ fontSize: 12, fontWeight: 'bold', color: '#475569', marginTop: 5, letterSpacing: 0.5 }}>PERUSAHAAN UMUM (PERUM) LPPNPI - AIRNAV INDONESIA</div>
         </div>
       </div>
@@ -120,19 +121,19 @@ const BriefingTemplate = forwardRef(function BriefingTemplate({ briefing }, ref)
         <tbody>
           <tr>
             <td style={{ ...s.infoTd, ...s.infoLabel }}>DATE</td>
-            <td style={{ ...s.infoTd, ...s.infoValue, ...s.dateValue }}>{date}</td>
+            <td style={{ ...s.infoTd, ...s.infoValue, ...s.dateValue }}>{postshift.date?.toUpperCase()}</td>
           </tr>
           <tr>
             <td style={{ ...s.infoTd, ...s.infoLabel }}>TIME</td>
-            <td style={{ ...s.infoTd, ...s.infoValue }}>{time}</td>
+            <td style={{ ...s.infoTd, ...s.infoValue }}>{postshift.time}</td>
           </tr>
           <tr>
             <td style={{ ...s.infoTd, ...s.infoLabel }}>MANAGER ON DUTY</td>
-            <td style={{ ...s.infoTd, ...s.infoValue, fontWeight: 'bold' }}>{incomingManager?.nama?.toUpperCase()}</td>
+            <td style={{ ...s.infoTd, ...s.infoValue, fontWeight: 'bold' }}>{postshift.incomingManager?.nama?.toUpperCase()}</td>
           </tr>
           <tr>
             <td style={{ ...s.infoTd, ...s.infoLabel }}>SHIFT</td>
-            <td style={{ ...s.infoTd, ...s.infoValue }}>{shift}</td>
+            <td style={{ ...s.infoTd, ...s.infoValue }}>{postshift.shift}</td>
           </tr>
         </tbody>
       </table>
@@ -148,8 +149,7 @@ const BriefingTemplate = forwardRef(function BriefingTemplate({ briefing }, ref)
           </tr>
         </thead>
         <tbody>
-          {checklistData.map((item, index) => {
-            const isNoText = String(item.no).includes('.');
+          {postshift.checklistData?.map((item, index) => {
             return (
               <tr key={index}>
                 <td style={{ ...s.td, textAlign: 'center', fontWeight: 'bold' }}>{item.no}.</td>
@@ -179,34 +179,34 @@ const BriefingTemplate = forwardRef(function BriefingTemplate({ briefing }, ref)
           {/* Incoming Manager */}
           <tr>
             <td style={{ ...s.sigTd, textAlign: 'left', fontStyle: 'italic', fontWeight: 'bold' }}>Incoming Manager</td>
-            <td style={s.sigTd}>{incomingManager?.nama}</td>
-            <td style={s.sigTd}>{incomingManager?.initial}</td>
+            <td style={s.sigTd}>{postshift.incomingManager?.nama}</td>
+            <td style={s.sigTd}>{postshift.incomingManager?.initial}</td>
             <td style={{ ...s.sigTd, height: 70, padding: '4px' }}>
-              {incomingManager?.ttd && (
+              {postshift.incomingManager?.ttd && (
                 <img
-                  src={`http://localhost:3000/signatures/${incomingManager.ttd}`}
+                  src={`http://localhost:3000/signatures/${postshift.incomingManager.ttd}`}
                   alt="TTD"
                   style={{ maxHeight: 65, maxWidth: '100%', objectFit: 'contain' }}
                 />
               )}
             </td>
-            <td style={s.sigTd}>{incomingManager?.time}</td>
+            <td style={s.sigTd}>{postshift.incomingManager?.time}</td>
           </tr>
           {/* Outgoing Manager */}
           <tr>
             <td style={{ ...s.sigTd, textAlign: 'left', fontStyle: 'italic', fontWeight: 'bold' }}>Outgoing Manager</td>
-            <td style={s.sigTd}>{outgoingManager?.nama}</td>
-            <td style={s.sigTd}>{outgoingManager?.initial}</td>
+            <td style={s.sigTd}>{postshift.outgoingManager?.nama}</td>
+            <td style={s.sigTd}>{postshift.outgoingManager?.initial}</td>
             <td style={{ ...s.sigTd, height: 70, padding: '4px' }}>
-              {outgoingManager?.ttd && (
+              {postshift.outgoingManager?.ttd && (
                 <img
-                  src={`http://localhost:3000/signatures/${outgoingManager.ttd}`}
+                  src={`http://localhost:3000/signatures/${postshift.outgoingManager.ttd}`}
                   alt="TTD"
                   style={{ maxHeight: 65, maxWidth: '100%', objectFit: 'contain' }}
                 />
               )}
             </td>
-            <td style={s.sigTd}>{outgoingManager?.time}</td>
+            <td style={s.sigTd}>{postshift.outgoingManager?.time}</td>
           </tr>
         </tbody>
       </table>
@@ -214,5 +214,5 @@ const BriefingTemplate = forwardRef(function BriefingTemplate({ briefing }, ref)
   );
 });
 
-export default BriefingTemplate;
+export default PostShiftTemplate;
 export { PAGE_WIDTH };

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, FileText, LogOut, FilePlus, User, Key, Users } from 'lucide-react';
+import { LayoutDashboard, FileText, LogOut, FilePlus, User, Key, Users, Settings, CheckSquare } from 'lucide-react';
 
 export default function Layout() {
   const { user, logout } = useAuth();
@@ -73,11 +73,12 @@ export default function Layout() {
 
   const isSuperAdmin = ['DY', 'IB', 'YD', 'AY', 'IW'].includes(user.initial);
 
-  const navItems = user.role === 'admin' 
+  const navItems = user.role === 'admin'
     ? [
         { path: '/admin/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
         { path: '/admin/create-notam', label: 'Buat NOTAM', icon: <FilePlus size={20} /> },
-        ...(isSuperAdmin ? [{ path: '/admin/accounts', label: 'Manajemen Akun', icon: <Users size={20} /> }] : []),
+        { path: '/admin/create-briefing', label: 'Buat Pre-Shift', icon: <CheckSquare size={20} /> },
+        { path: '/admin/create-postshift', label: 'Buat Post-Shift', icon: <CheckSquare size={20} /> },
       ]
     : [
         { path: '/employee/dashboard', label: 'Daftar NOTAM', icon: <FileText size={20} /> },
@@ -92,7 +93,7 @@ export default function Layout() {
             alt="AirNav Logo" 
             style={{ width: '40px', height: '40px', objectFit: 'contain' }} 
           />
-          <span style={{ letterSpacing: '-0.5px' }}>AirNav <span style={{ color: '#64748b', fontWeight: 500 }}>NOTAM System</span></span>
+          <span style={{ letterSpacing: '-0.5px' }}>AirNav <span style={{ color: '#64748b', fontWeight: 500 }}>Operations Portal</span></span>
         </div>
 
         <nav className="topbar-nav" style={{ display: 'flex', gap: '0.5rem', flex: 1, justifyContent: 'center', padding: '0 2rem' }}>
@@ -168,6 +169,34 @@ export default function Layout() {
                 >
                   <Key size={16} /> Ganti Password
                 </button>
+
+                {user.role === 'admin' && (
+                  <>
+                    <button 
+                      onClick={() => { setShowSettings(false); navigate('/admin/settings/shift'); }}
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                        padding: '0.75rem 1rem', border: 'none', background: 'transparent',
+                        cursor: 'pointer', borderRadius: '8px', textAlign: 'left'
+                      }}
+                    >
+                      <Settings size={16} /> Pengaturan Shift
+                    </button>
+                    {isSuperAdmin && (
+                      <button 
+                        onClick={() => { setShowSettings(false); navigate('/admin/accounts'); }}
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                          padding: '0.75rem 1rem', border: 'none', background: 'transparent',
+                          cursor: 'pointer', borderRadius: '8px', textAlign: 'left'
+                        }}
+                      >
+                        <Users size={16} /> Manajemen Akun
+                      </button>
+                    )}
+                  </>
+                )}
+
                 <button 
                   onClick={handleLogout}
                   style={{

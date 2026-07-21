@@ -3,7 +3,7 @@ const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { initDb, User, Notam, Briefing } = require('./database');
+const { initDb, User, Notam, Briefing, PostShift } = require('./database');
 
 const app = express();
 app.use(cors());
@@ -219,6 +219,102 @@ app.delete('/api/briefings/:id', async (req, res) => {
     const briefing = await Briefing.findByPk(req.params.id);
     if (!briefing) return res.status(404).json({ error: 'Not found' });
     await briefing.destroy();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Get All PostShifts
+app.get('/api/postshifts', async (req, res) => {
+  try {
+    const postshifts = await PostShift.findAll({ order: [['createdAt', 'DESC']] });
+    const parsed = postshifts.map(p => {
+      const data = p.toJSON();
+      data.checklistData = JSON.parse(data.checklistData);
+      data.incomingManager = JSON.parse(data.incomingManager);
+      data.outgoingManager = JSON.parse(data.outgoingManager);
+      return data;
+    });
+    res.json(parsed);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Get Single PostShift
+app.get('/api/postshifts/:id', async (req, res) => {
+  try {
+    const postshift = await PostShift.findByPk(req.params.id);
+    if (!postshift) return res.status(404).json({ error: 'Not found' });
+    const data = postshift.toJSON();
+    data.checklistData = JSON.parse(data.checklistData);
+    data.incomingManager = JSON.parse(data.incomingManager);
+    data.outgoingManager = JSON.parse(data.outgoingManager);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Create PostShift
+app.post('/api/postshifts', async (req, res) => {
+  try {
+    const { id, date, time, managerOnDuty, shift, checklistData, incomingManager, outgoingManager, createdBy } = req.body;
+    const newPostShift = await PostShift.create({
+      id,
+      date,
+      time,
+      managerOnDuty,
+      shift,
+      checklistData: JSON.stringify(checklistData),
+      incomingManager: JSON.stringify(incomingManager),
+      outgoingManager: JSON.stringify(outgoingManager),
+      createdBy
+    });
+    const responseData = newPostShift.toJSON();
+    responseData.checklistData = JSON.parse(responseData.checklistData);
+    responseData.incomingManager = JSON.parse(responseData.incomingManager);
+    responseData.outgoingManager = JSON.parse(responseData.outgoingManager);
+    res.json({ success: true, postshift: responseData });
+  } catch (err) {
+    console.error('Error creating postshift:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Delete PostShift
+app.delete('/api/postshifts/:id', async (req, res) => {
+  try {
+    const postshift = await PostShift.findByPk(req.params.id);
+    if (!postshift) return res.status(404).json({ error: 'Not found' });
+    await postshift.destroy();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Get Shift Settings
+app.get('/api/settings/shift', (req, res) => {
+  try {
+    const settingsPath = path.join(__dirname, 'shift_settings.json');
+    if (fs.existsSync(settingsPath)) {
+      const data = fs.readFileSync(settingsPath, 'utf8');
+      res.json(JSON.parse(data));
+    } else {
+      res.json({});
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Update Shift Settings
+app.post('/api/settings/shift', (req, res) => {
+  try {
+    const settingsPath = path.join(__dirname, 'shift_settings.json');
+    fs.writeFileSync(settingsPath, JSON.stringify(req.body, null, 2));
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

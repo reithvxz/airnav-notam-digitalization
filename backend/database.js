@@ -128,8 +128,54 @@ const Briefing = sequelize.define('Briefing', {
   }
 });
 
+// Define PostShift Model
+const PostShift = sequelize.define('PostShift', {
+  id: {
+    type: DataTypes.STRING,
+    primaryKey: true
+  },
+  date: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  time: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  managerOnDuty: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  shift: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  checklistData: {
+    type: DataTypes.TEXT, // JSON array of 10 checklist items
+    allowNull: false
+  },
+  incomingManager: {
+    type: DataTypes.TEXT, // JSON {initial, nama, ttd, time}
+    allowNull: false
+  },
+  outgoingManager: {
+    type: DataTypes.TEXT, // JSON {initial, nama, ttd, time}
+    allowNull: false
+  },
+  createdBy: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: User,
+      key: 'id'
+    }
+  }
+});
+
 User.hasMany(Briefing, { foreignKey: 'createdBy' });
 Briefing.belongsTo(User, { foreignKey: 'createdBy' });
+
+User.hasMany(PostShift, { foreignKey: 'createdBy' });
+PostShift.belongsTo(User, { foreignKey: 'createdBy' });
 
 // Sync database function
 const initDb = async () => {
@@ -137,4 +183,4 @@ const initDb = async () => {
   console.log("Database synchronized");
 };
 
-module.exports = { sequelize, User, Notam, Briefing, initDb };
+module.exports = { sequelize, User, Notam, Briefing, PostShift, initDb };

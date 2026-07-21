@@ -3,7 +3,7 @@
 Sistem digitalisasi pengelolaan **Notice to Airmen (NOTAM)** berbasis web yang dikembangkan khusus untuk keperluan internal **AirNav Indonesia Cabang Surabaya**. Aplikasi ini menggantikan proses pengajuan dan pencetakan NOTAM manual menjadi proses digital yang terpusat, cepat, dan mudah dipantau.
 
 ## Pembaruan Terbaru (Update Database & UI)
-- 📝 **Pre-Shift Briefing Interaktif**: Fitur pembuatan Form Pre-Shift Briefing baru dengan UI checklist yang sangat dinamis (memungkinkan transisi otomatis dari format centang ke keterangan teks).
+- 📝 **Pre-Shift & Post-Shift Interaktif**: Fitur pembuatan Form Pre-Shift Briefing dan Post-Shift Review baru dengan UI checklist yang sangat dinamis (memungkinkan transisi otomatis dari format centang ke keterangan teks), serta pengaturan dinamis untuk default waktu shift.
 - ✨ **Custom UI Pickers**: Menghapus tampilan *default browser* dan menggantinya dengan komponen Pop-Up *custom* bergaya premium untuk pemilih Tanggal (*Date Picker*), Waktu (*Time Picker*), dan pilihan Manager.
 - 🗄️ **Migrasi ke MySQL**: Aplikasi kini telah didukung oleh backend (Express.js) dan database relasional (MySQL) menggunakan Sequelize ORM.
 - 🔐 **Manajemen Akun Terpusat**: Manager (Admin) sekarang dapat membuat akun untuk anggota tim (PT MANAGER OPERASI APP-TWR) secara langsung melalui menu Manajemen Akun.

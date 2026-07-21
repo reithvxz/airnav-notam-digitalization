@@ -8,6 +8,8 @@ import EmployeeDashboard from './pages/EmployeeDashboard';
 import CreateNotam from './pages/CreateNotam';
 import AccountManagement from './pages/AccountManagement';
 import CreateBriefing from './pages/CreateBriefing';
+import CreatePostShift from './pages/CreatePostShift';
+import ShiftSettings from './pages/ShiftSettings';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRole, requireSuperAdmin }) => {
@@ -59,10 +61,26 @@ function AppRoutes() {
           } 
         />
         <Route 
+          path="/admin/settings/shift" 
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <ShiftSettings />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
           path="/admin/create-briefing" 
           element={
             <ProtectedRoute allowedRole="admin">
               <CreateBriefing />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/admin/create-postshift" 
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <CreatePostShift />
             </ProtectedRoute>
           } 
         />

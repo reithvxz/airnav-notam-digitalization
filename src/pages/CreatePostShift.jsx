@@ -5,18 +5,15 @@ import { Save, ArrowLeft, Plus, Trash2, User, CheckSquare, Check } from 'lucide-
 import { CustomDatePicker, CustomTimePicker, CustomSelect, useClickOutside } from '../components/CustomPickers';
 
 const CHECKLIST_ITEMS = [
-  { no: 1,  subject: 'Personnel Attendance',         details: 'Ensure all ATC and operational personnel are present' },
-  { no: 2,  subject: 'Personnel Readiness',          details: 'Ensure all ATC and operational personnel are present and fit for duty.' },
-  { no: 3,  subject: 'Traffic',                      details: 'Current and expected traffic volume, sequencing, and flow management.' },
-  { no: 4,  subject: 'Weather',                      details: 'Current QAM/METAR/TAF, visibility, wind, and forecast of significant weather.' },
-  { no: 5,  subject: 'Facilities',                   details: 'COM/NAV/SUR/ATMAS, lighting, power supply, and system functionality' },
-  { no: 6,  subject: 'NOTAM',                        details: 'Review current NOTAMs, and any restrictions.' },
-  { no: 7,  subject: 'Coordination',                 details: 'Pending or ongoing coordination with adjacent units or INMC.' },
-  { no: 8,  subject: 'Special Operations',           details: 'VIP, military, emergency, or training flight plans.' },
-  { no: 9,  subject: 'Special Procedures in Effect', details: 'Contingency plans, reduced separation, or temporary procedures.' },
-  { no: 10, subject: 'Personnel Allocation',         details: 'Assignment of positions and rest rotation', defaultText: 'BY SUPERVISOR' },
-  { no: 11, subject: 'Focus Session',                details: 'Prayer or meditation, or focus session before duty.' },
-  { no: 12, subject: 'Closing Confirmation',         details: 'Ensure all personnel understand briefing content and are ready for duty' },
+  { no: 1, subject: 'Operational summary', details: 'Review traffic situation during the shift and any unusual events' },
+  { no: 2, subject: 'Safety Performance', details: 'Identify any safety-related occurrences or deviations.' },
+  { no: 3, subject: 'Weather summary', details: 'Record significant weather or forecast changes affecting operation' },
+  { no: 4, subject: 'Facilities summary', details: 'Note any malfunction, maintenance action, or service interruption' },
+  { no: 5, subject: 'Coordination record', details: 'Verify completed coordination with other units.' },
+  { no: 6, subject: 'Personnel performance', details: 'Evaluate controller and staff performance, workload, and teamwork', defaultText: 'BY SUPERVISOR ON DUTY' },
+  { no: 7, subject: 'Documentation check', details: 'Ensure logbook, handover sheets, and incident records are updated.' },
+  { no: 8, subject: 'Feedback', details: 'Feedback or improvement suggestions' },
+  { no: 9, subject: 'Closing remarks', details: 'Express appreciation for teamwork and remind safety on the way home' },
 ];
 
 const SHIFTS = ['PAGI', 'SIANG', 'MALAM'];
@@ -38,7 +35,7 @@ function initChecklist() {
     details: item.details,
     checked: true,
     remarks: item.defaultText || '',
-    isTextMode: item.no === 10, // item 10 always text mode
+    isTextMode: item.no === 6, // item 6 always text mode
   }));
 }
 
@@ -179,7 +176,7 @@ function ManagerCard({ role, users, selectedInitial, onChange, time, onTimeChang
 }
 
 // ── Main Component ─────────────────────────────────────────────
-export default function CreateBriefing() {
+export default function CreatePostShift() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -216,18 +213,18 @@ export default function CreateBriefing() {
 
   // ── Auto-fill times based on Shift ───────────────
   useEffect(() => {
-    if (shiftSettings && shiftSettings.preshift && shiftSettings.preshift[shift]) {
-      setBriefingTime(shiftSettings.preshift[shift].time || '');
-      setIncomingTime(shiftSettings.preshift[shift].incoming || '');
-      setOutgoingTime(shiftSettings.preshift[shift].outgoing || '');
+    if (shiftSettings && shiftSettings.postshift && shiftSettings.postshift[shift]) {
+      setBriefingTime(shiftSettings.postshift[shift].time || '');
+      setIncomingTime(shiftSettings.postshift[shift].incoming || '');
+      setOutgoingTime(shiftSettings.postshift[shift].outgoing || '');
     } else {
       // Fallback
       if (shift === 'PAGI') {
-        setBriefingTime('22.30 UTC'); setIncomingTime('23.30 UTC'); setOutgoingTime('00.00 UTC');
+        setBriefingTime('05.30 UTC'); setIncomingTime('05.30 UTC'); setOutgoingTime('06.00 UTC');
       } else if (shift === 'SIANG') {
-        setBriefingTime('05.00 UTC'); setIncomingTime('05.30 UTC'); setOutgoingTime('06.00 UTC');
+        setBriefingTime('12.00 UTC'); setIncomingTime('11.30 UTC'); setOutgoingTime('12.00 UTC');
       } else if (shift === 'MALAM') {
-        setBriefingTime('11.30 UTC'); setIncomingTime('11.30 UTC'); setOutgoingTime('12.00 UTC');
+        setBriefingTime('23.00 UTC'); setIncomingTime('23.30 UTC'); setOutgoingTime('00.00 UTC');
       }
     }
   }, [shift, shiftSettings]);
@@ -296,17 +293,20 @@ export default function CreateBriefing() {
 
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:3000/api/briefings', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      const res = await fetch('http://localhost:3000/api/postshifts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (data.success) {
-        navigate('/admin/dashboard', { state: { tab: 'briefing' } });
+        navigate('/admin/dashboard', { state: { tab: 'postshift' } });
       } else {
-        setError(data.error || 'Gagal menyimpan');
+        throw new Error('Gagal menyimpan data');
       }
-    } catch { setError('Terjadi kesalahan server'); }
-    finally { setLoading(false); }
+    } catch (err) {
+      setError('Gagal membuat post-shift: ' + err.message);
+    } finally { setLoading(false); }
   };
 
   // ── Render ────────────────────────────────────────
@@ -333,9 +333,9 @@ export default function CreateBriefing() {
           <div>
             <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 10 }}>
               <CheckSquare size={24} color="#2563eb" />
-              Form Pre-Shift Briefing
+              Form Post-Shift Review Checklist
             </h1>
-            <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>Checklist & Validasi Kesiapan Operasional ATC</p>
+            <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>Review dan Evaluasi Operasional ATC</p>
           </div>
         </div>
       </div>
@@ -348,7 +348,7 @@ export default function CreateBriefing() {
             <div style={{ width: 32, height: 32, borderRadius: 8, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ fontWeight: 800, color: '#2563eb', fontSize: '0.85rem' }}>01</span>
             </div>
-            <h2 style={{ margin: 0, fontWeight: 700, fontSize: '1rem', color: '#1e293b' }}>Informasi Briefing</h2>
+            <h2 style={{ margin: 0, fontWeight: 700, fontSize: '1rem', color: '#1e293b' }}>Informasi Post-Shift</h2>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr', gap: '1.25rem' }}>
             {/* Date */}

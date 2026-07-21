@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNotams } from '../context/NotamContext';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Plus, FileText, CheckCircle, Clock, TrendingUp, Activity, MapPin, CheckSquare, Trash2, Calendar } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import PdfViewerModal from '../components/PdfViewerModal';
 import BriefingViewerModal from '../components/BriefingViewerModal';
+import PostShiftViewerModal from '../components/PostShiftViewerModal';
 
 const PIE_COLORS = ['#3b82f6', '#f59e0b', '#ef4444', '#64748b'];
 
@@ -28,9 +29,12 @@ export default function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [jenisFilter, setJenisFilter] = useState('all');
   const [selectedNotam, setSelectedNotam] = useState(null);
-  const [mainTab, setMainTab] = useState('notam'); // 'notam' | 'briefing'
+  const location = useLocation();
+  const [mainTab, setMainTab] = useState(location.state?.tab || 'notam'); // 'notam' | 'briefing' | 'postshift'
   const [briefings, setBriefings] = useState([]);
+  const [postshifts, setPostshifts] = useState([]);
   const [selectedBriefing, setSelectedBriefing] = useState(null);
+  const [selectedPostShift, setSelectedPostShift] = useState(null);
 
   useEffect(() => {
     if (mainTab === 'briefing') {
@@ -38,6 +42,11 @@ export default function AdminDashboard() {
         .then(r => r.json())
         .then(data => setBriefings(Array.isArray(data) ? data : []))
         .catch(() => setBriefings([]));
+    } else if (mainTab === 'postshift') {
+      fetch('http://localhost:3000/api/postshifts')
+        .then(r => r.json())
+        .then(data => setPostshifts(Array.isArray(data) ? data : []))
+        .catch(() => setPostshifts([]));
     }
   }, [mainTab]);
 
@@ -46,6 +55,13 @@ export default function AdminDashboard() {
     if (!window.confirm('Hapus briefing ini?')) return;
     await fetch(`http://localhost:3000/api/briefings/${id}`, { method: 'DELETE' });
     setBriefings(prev => prev.filter(b => b.id !== id));
+  };
+
+  const handleDeletePostShift = async (id, e) => {
+    e.stopPropagation();
+    if (!window.confirm('Hapus post-shift ini?')) return;
+    await fetch(`http://localhost:3000/api/postshifts/${id}`, { method: 'DELETE' });
+    setPostshifts(prev => prev.filter(p => p.id !== id));
   };
 
   const now = new Date();
@@ -70,7 +86,8 @@ export default function AdminDashboard() {
     let cancelCount = 0;
     let assessmentCount = 0;
 
-    notams.forEach(notam => {
+    const safeNotams = Array.isArray(notams) ? notams : [];
+    safeNotams.forEach(notam => {
       const formData = notam.formData || {};
       const startTime = new Date(formData.waktuMulai || notam.waktuMulai || notam.createdAt);
       const endTime = new Date(formData.waktuSelesai || notam.waktuSelesai || notam.createdAt);
@@ -198,14 +215,15 @@ export default function AdminDashboard() {
     if (isActive && payload && payload.length) {
       return (
         <div style={{
-          backgroundColor: 'white',
-          padding: '12px 16px',
-          borderRadius: '10px',
-          border: 'none',
-          boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+          backgroundColor: 'rgba(255, 255, 255, 0.85)',
+          backdropFilter: 'blur(12px)',
+          padding: '12px 20px',
+          borderRadius: '16px',
+          border: '1px solid rgba(255,255,255,0.6)',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
         }}>
-          <p style={{ margin: 0, fontWeight: 600, color: '#0f172a' }}>{label}</p>
-          <p style={{ margin: '4px 0 0', color: '#3b82f6', fontWeight: 500 }}>{payload[0].value} NOTAM</p>
+          <p style={{ margin: 0, fontWeight: 700, color: '#1e293b', fontSize: '1rem' }}>{label}</p>
+          <p style={{ margin: '4px 0 0', color: '#3b82f6', fontWeight: 600, fontSize: '0.9rem' }}>{payload[0].value} NOTAM</p>
         </div>
       );
     }
@@ -220,16 +238,7 @@ export default function AdminDashboard() {
           <h1 className="page-title">Dashboard Admin</h1>
           <p className="page-subtitle">Ringkasan aktivitas dan manajemen NOTAM</p>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <Link to="/admin/create-notam" className="btn btn-primary">
-            <Plus size={20} />
-            Buat NOTAM Baru
-          </Link>
-          <Link to="/admin/create-briefing" className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <CheckSquare size={18} />
-            Buat Briefing
-          </Link>
-        </div>
+
       </div>
 
       {/* Main Tab Switch */}
@@ -258,10 +267,28 @@ export default function AdminDashboard() {
           }}
         >
           <CheckSquare size={15} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-          Pre-Shift Briefing
+          Pre-Shift
           {briefings.length > 0 && (
             <span style={{ marginLeft: 6, background: '#2563eb', color: 'white', borderRadius: 10, fontSize: '0.7rem', padding: '1px 7px' }}>
               {briefings.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setMainTab('postshift')}
+          style={{
+            padding: '0.6rem 1.25rem', border: 'none', background: 'transparent',
+            fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
+            borderBottom: mainTab === 'postshift' ? '2px solid #2563eb' : '2px solid transparent',
+            color: mainTab === 'postshift' ? '#2563eb' : '#64748b',
+            marginBottom: -2, transition: 'all 0.2s',
+          }}
+        >
+          <CheckSquare size={15} style={{ marginRight: 6, verticalAlign: 'middle' }} />
+          Post-Shift
+          {postshifts.length > 0 && (
+            <span style={{ marginLeft: 6, background: '#2563eb', color: 'white', borderRadius: 10, fontSize: '0.7rem', padding: '1px 7px' }}>
+              {postshifts.length}
             </span>
           )}
         </button>
@@ -270,39 +297,30 @@ export default function AdminDashboard() {
       {mainTab === 'notam' && (<>
 
       {/* Stat Cards */}
-      <div className="stat-cards" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1.25rem', marginBottom: '2rem' }}>
         {statCards.map((card) => {
           const Icon = card.icon;
           const isSelected = card.filterKey && statusFilter === card.filterKey;
           return (
             <div
               key={card.label}
-              className="stat-card"
+              className="metric-card"
               onClick={() => card.filterKey && setStatusFilter(card.filterKey)}
               style={{
                 cursor: card.filterKey ? 'pointer' : 'default',
-                border: isSelected ? `2px solid ${card.borderColor}` : '1px solid #e2e8f0',
-                transform: isSelected ? 'scale(1.03)' : 'scale(1)',
-                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                borderColor: isSelected ? card.borderColor : 'rgba(255,255,255,0.5)',
+                boxShadow: isSelected ? `0 0 0 2px ${card.borderColor}33, 0 10px 25px rgba(0,0,0,0.05)` : undefined
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <span className="stat-title">{card.label}</span>
-                <div style={{
-                  padding: '0.5rem',
-                  backgroundColor: card.iconBg,
-                  borderRadius: '10px',
-                  color: card.iconColor,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <Icon size={20} />
-                </div>
+              <div className="metric-icon-wrapper" style={{ backgroundColor: card.iconBg, color: card.iconColor }}>
+                <Icon size={24} strokeWidth={2.5} />
               </div>
-              <span className="stat-value">{card.value}</span>
+              <div className="metric-value">{card.value}</div>
+              <div className="metric-label">{card.label}</div>
               {card.subtitle && (
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>{card.subtitle}</span>
+                <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.25rem', fontWeight: 500 }}>
+                  {card.subtitle}
+                </div>
               )}
             </div>
           );
@@ -351,35 +369,46 @@ export default function AdminDashboard() {
             {pieData.length > 0 ? (
               <ResponsiveContainer>
                 <PieChart>
+                  <defs>
+                    <linearGradient id="pieGradient1" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" />
+                      <stop offset="100%" stopColor="#2563eb" />
+                    </linearGradient>
+                    <linearGradient id="pieGradient2" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#f59e0b" />
+                      <stop offset="100%" stopColor="#d97706" />
+                    </linearGradient>
+                    <linearGradient id="pieGradient3" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" />
+                      <stop offset="100%" stopColor="#059669" />
+                    </linearGradient>
+                    <linearGradient id="pieGradient4" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#64748b" />
+                      <stop offset="100%" stopColor="#475569" />
+                    </linearGradient>
+                  </defs>
                   <Pie
                     data={pieData}
                     cx="50%"
                     cy="45%"
                     innerRadius={55}
                     outerRadius={85}
-                    paddingAngle={4}
+                    paddingAngle={6}
                     dataKey="value"
                     stroke="none"
                   >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                    ))}
+                    {pieData.map((entry, index) => {
+                      const gradients = ["url(#pieGradient1)", "url(#pieGradient2)", "url(#pieGradient3)", "url(#pieGradient4)"];
+                      return <Cell key={`cell-${index}`} fill={gradients[index % gradients.length]} style={{ filter: `drop-shadow(0px 2px 4px rgba(0,0,0,0.1))` }} />
+                    })}
                   </Pie>
                   <Legend
                     verticalAlign="bottom"
                     iconType="circle"
                     iconSize={8}
-                    wrapperStyle={{ fontSize: '12px', color: '#64748b' }}
+                    wrapperStyle={{ fontSize: '13px', color: '#475569', fontWeight: 600 }}
                   />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: '10px',
-                      border: 'none',
-                      boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-                      padding: '10px 14px',
-                    }}
-                    formatter={(value, name) => [`${value} NOTAM`, name]}
-                  />
+                  <Tooltip content={<CustomTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -401,22 +430,13 @@ export default function AdminDashboard() {
                   <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
                   <XAxis type="number" hide />
                   <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} width={70} />
-                  <Tooltip
-                    cursor={{ fill: 'rgba(59,130,246,0.04)' }}
-                    contentStyle={{
-                      borderRadius: '10px',
-                      border: 'none',
-                      boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-                      padding: '10px 14px',
-                    }}
-                    formatter={(value) => [`${value} NOTAM`, 'Total']}
-                  />
-                  <Bar dataKey="value" radius={[0, 6, 6, 0]}>
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59,130,246,0.04)' }} />
+                  <Bar dataKey="value" radius={[0, 8, 8, 0]}>
                     {statusPieData.map((entry, index) => {
                       const colors = {
-                        'Terbit': '#10b981',
-                        'Incoming': '#f59e0b',
-                        'Selesai': '#ef4444'
+                        'Terbit': 'url(#pieGradient3)',
+                        'Incoming': 'url(#pieGradient2)',
+                        'Selesai': '#ef4444' // we can add more gradients if needed
                       };
                       return <Cell key={`cell-${index}`} fill={colors[entry.name]} />;
                     })}
@@ -686,11 +706,86 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* ── POST-SHIFT TAB ─────────────────────────── */}
+      {mainTab === 'postshift' && (
+        <div className="card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>
+              Daftar Post-Shift Review
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'normal', marginLeft: 8 }}>({postshifts.length} dokumen)</span>
+            </h3>
+            <Link to="/admin/create-postshift" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', padding: '0.45rem 1rem' }}>
+              <Plus size={15} /> Buat Post-Shift Baru
+            </Link>
+          </div>
+
+          {postshifts.length === 0 ? (
+            <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+              <CheckSquare size={40} style={{ opacity: 0.15, marginBottom: '0.5rem' }} />
+              <p>Belum ada Post-Shift Review Checklist.</p>
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Tanggal</th>
+                    <th>Waktu</th>
+                    <th>Shift</th>
+                    <th>Incoming Manager</th>
+                    <th>Outgoing Manager</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {postshifts.map(p => (
+                    <tr key={p.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedPostShift(p)}>
+                      <td style={{ fontWeight: 600 }}>{p.date}</td>
+                      <td>{p.time}</td>
+                      <td>
+                        <span className="badge badge-blue" style={{ fontSize: '0.72rem' }}>{p.shift}</span>
+                      </td>
+                      <td>
+                        <div style={{ fontSize: '0.85rem' }}>{p.incomingManager?.nama}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{p.incomingManager?.initial}</div>
+                      </td>
+                      <td>
+                        <div style={{ fontSize: '0.85rem' }}>{p.outgoingManager?.nama}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{p.outgoingManager?.initial}</div>
+                      </td>
+                      <td style={{ display: 'flex', gap: 6 }}>
+                        <button
+                          className="btn btn-secondary"
+                          style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
+                          onClick={(e) => { e.stopPropagation(); setSelectedPostShift(p); }}
+                        >
+                          Lihat PDF
+                        </button>
+                        <button
+                          className="btn"
+                          style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                          onClick={(e) => handleDeletePostShift(p.id, e)}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       {selectedNotam && (
         <PdfViewerModal notam={selectedNotam} onClose={() => setSelectedNotam(null)} />
       )}
       {selectedBriefing && (
         <BriefingViewerModal briefing={selectedBriefing} onClose={() => setSelectedBriefing(null)} />
+      )}
+      {selectedPostShift && (
+        <PostShiftViewerModal postshift={selectedPostShift} onClose={() => setSelectedPostShift(null)} />
       )}
     </div>
   );
