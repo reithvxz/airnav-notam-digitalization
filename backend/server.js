@@ -3,7 +3,7 @@ const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { initDb, User, Notam, Briefing, PostShift } = require('./database');
+const { initDb, User, Notam, Briefing, PostShift, Event } = require('./database');
 
 const app = express();
 app.use(cors());
@@ -43,6 +43,11 @@ app.post('/api/login', async (req, res) => {
       if (user.initial !== username) {
         console.log(`[LOGIN FAILED] Case mismatch. Expected ${user.initial}, got ${username}`);
         return res.status(401).json({ success: false, message: 'Invalid credentials' });
+      }
+      
+      if (!user.isActive) {
+        console.log(`[LOGIN FAILED] Account deactivated for ${user.initial}`);
+        return res.status(403).json({ success: false, message: 'Akun ini telah dinonaktifkan' });
       }
       
       console.log(`[LOGIN SUCCESS] User: ${user.initial}`);
@@ -146,14 +151,128 @@ app.post('/api/notams', async (req, res) => {
 // API: Get All Users (for dropdown)
 app.get('/api/users', async (req, res) => {
   try {
+    const whereClause = req.query.all ? {} : { isActive: true };
     const users = await User.findAll({
-      attributes: ['id', 'initial', 'nama', 'jabatan', 'role', 'tanda_tangan']
+      where: whereClause,
+      attributes: ['id', 'initial', 'nama', 'jabatan', 'role', 'tanda_tangan', 'isActive']
     });
     res.json(users);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
+// API: Deactivate User
+app.put('/api/users/:id/deactivate', async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    
+    // Prevent superadmin deactivation just in case
+    if (['DY', 'IB', 'YD', 'AY', 'IW'].includes(user.initial)) {
+      return res.status(403).json({ success: false, message: 'Super admin tidak dapat dinonaktifkan' });
+    }
+    
+    user.isActive = false;
+    await user.save();
+    res.json({ success: true, message: 'Akun berhasil dinonaktifkan' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// API: Activate User
+app.put('/api/users/:id/activate', async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    
+    user.isActive = true;
+    await user.save();
+    res.json({ success: true, message: 'Akun berhasil diaktifkan' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// API: Delete User
+app.delete('/api/users/:id', async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    
+    // Prevent superadmin deletion
+    if (['DY', 'IB', 'YD', 'AY', 'IW'].includes(user.initial)) {
+      return res.status(403).json({ success: false, message: 'Super admin tidak dapat dihapus' });
+    }
+    
+    await user.destroy();
+    res.json({ success: true, message: 'Akun berhasil dihapus permanen' });
+  } catch (err) {
+    // Handle foreign key constraint error (if user has created briefings)
+    if (err.name === 'SequelizeForeignKeyConstraintError') {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Gagal menghapus! Akun ini telah membuat form NOTAM/Shift. Silakan gunakan opsi Nonaktifkan saja agar data lama tidak error.' 
+      });
+    }
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==========================================
+// API: EVENTS (CALENDAR)
+// ==========================================
+
+// Get all events
+app.get('/api/events', async (req, res) => {
+  try {
+    const events = await Event.findAll();
+    res.json(events);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Create event
+app.post('/api/events', async (req, res) => {
+  try {
+    const newEvent = await Event.create(req.body);
+    res.json({ success: true, event: newEvent });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Update event
+app.put('/api/events/:id', async (req, res) => {
+  try {
+    const event = await Event.findByPk(req.params.id);
+    if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
+    
+    await event.update(req.body);
+    res.json({ success: true, event });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Delete event
+app.delete('/api/events/:id', async (req, res) => {
+  try {
+    const event = await Event.findByPk(req.params.id);
+    if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
+    
+    await event.destroy();
+    res.json({ success: true, message: 'Event deleted' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==========================================
+// API: BRIEFINGS
+// ==========================================
 
 // API: Get All Briefings
 app.get('/api/briefings', async (req, res) => {

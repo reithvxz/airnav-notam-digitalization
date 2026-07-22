@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotamProvider } from './context/NotamContext';
+import { EventReminderProvider } from './context/EventReminderContext';
 import Login from './pages/Login';
 import Layout from './components/Layout';
 import AdminDashboard from './pages/AdminDashboard';
@@ -102,9 +103,11 @@ function App() {
   return (
     <AuthProvider>
       <NotamProvider>
-        <Router>
-          <AppRoutes />
-        </Router>
+        <EventReminderProvider>
+          <Router>
+            <AppRoutes />
+          </Router>
+        </EventReminderProvider>
       </NotamProvider>
     </AuthProvider>
   );

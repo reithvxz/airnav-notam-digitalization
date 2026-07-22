@@ -476,3 +476,162 @@ a {
   background: #f1f5f9;
 }
 
+/* --- FULLCALENDAR REDESIGN (AESTHETIC BORDERLESS) --- */
+.fc {
+  font-family: 'Outfit', 'Inter', sans-serif !important;
+  background-color: transparent !important;
+}
+
+/* Remove all borders */
+.fc-theme-standard td, .fc-theme-standard th, .fc-scrollgrid, .fc-scrollgrid-sync-table, .fc-scrollgrid-sync-inner {
+  border: none !important;
+}
+.fc-theme-standard .fc-scrollgrid {
+  border: none !important;
+}
+
+/* Day Header (Sun, Mon...) */
+.fc .fc-col-header-cell {
+  padding-bottom: 0.5rem !important;
+}
+.fc .fc-col-header-cell-cushion {
+  text-transform: capitalize !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  color: #64748b !important;
+  padding: 8px !important;
+}
+
+/* Day Numbers */
+.fc-daygrid-day-frame {
+  min-height: 100px !important;
+}
+.fc-daygrid-day-top {
+  display: flex !important;
+  justify-content: center !important; /* Center the number */
+  padding-top: 4px !important;
+}
+.fc-daygrid-day-events {
+  margin-top: 4px !important; 
+}
+.fc .fc-daygrid-day-number {
+  font-size: 1.15rem !important;
+  font-weight: 600 !important;
+  color: #334155 !important;
+  padding: 4px !important;
+  text-decoration: none !important;
+}
+
+/* Make Saturday, Sunday & Holidays Red */
+.fc .fc-col-header-cell.fc-day-sun .fc-col-header-cell-cushion,
+.fc .fc-col-header-cell.fc-day-sat .fc-col-header-cell-cushion,
+.fc .fc-daygrid-day.fc-day-sun .fc-daygrid-day-number,
+.fc .fc-daygrid-day.fc-day-sat .fc-daygrid-day-number,
+.fc .fc-daygrid-day.is-holiday .fc-daygrid-day-number {
+  color: #dc2626 !important; /* Bright strong red */
+  font-weight: 700 !important;
+}
+
+/* Header UI */
+.fc-header-toolbar {
+  margin-bottom: 2rem !important;
+  padding: 0 1rem !important;
+  flex-wrap: wrap !important;
+  gap: 1rem !important;
+}
+.fc-toolbar-chunk {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+.fc-toolbar-title {
+  font-weight: 800 !important;
+  font-size: 1.75rem !important;
+  color: #0f172a !important;
+  text-transform: capitalize !important;
+  letter-spacing: -0.5px !important;
+}
+
+/* Modern Buttons */
+.fc-button-primary {
+  background-color: white !important;
+  color: #334155 !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+  font-weight: 600 !important;
+  font-family: 'Inter', sans-serif !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border-radius: 10px !important;
+  padding: 0.5rem 1.25rem !important;
+  text-transform: capitalize !important;
+}
+.fc-button-primary:hover {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05) !important;
+}
+.fc-button-primary:not(:disabled).fc-button-active,
+.fc-button-primary:not(:disabled):active {
+  background-color: #2563eb !important;
+  color: white !important;
+  border-color: #2563eb !important;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1) !important;
+  transform: translateY(0) !important;
+}
+
+/* Fix Button Groups (Un-bunch them) */
+.fc-button-group {
+  display: flex !important;
+  gap: 0.5rem !important;
+}
+.fc-button-group > .fc-button {
+  margin: 0 !important;
+  border-radius: 10px !important;
+}
+
+/* Today Button Logic */
+.fc .fc-today-button:disabled {
+  background-color: #2563eb !important;
+  color: white !important;
+  border-color: #2563eb !important;
+  opacity: 1 !important;
+  cursor: default !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2) !important;
+}
+.fc .fc-today-button:not(:disabled) {
+  background-color: white !important;
+  color: #334155 !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Remove default event borders and backgrounds */
+.fc-event {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  margin-top: 4px !important;
+  opacity: 1 !important; /* Prevent faded look */
+}
+
+/* Highlight Today */
+.fc-day-today {
+  background-color: transparent !important;
+}
+.fc-day-today .fc-daygrid-day-number {
+  background-color: #2563eb !important;
+  color: white !important;
+  border-radius: 50% !important;
+  width: 32px !important;
+  height: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3) !important;
+  padding: 0 !important;
+}
+
+/* Ensure padding inside day cell */
+.fc-daygrid-day-frame {
+  padding: 6px !important;
+}

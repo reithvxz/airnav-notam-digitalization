@@ -6,6 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import PdfViewerModal from '../components/PdfViewerModal';
 import BriefingViewerModal from '../components/BriefingViewerModal';
 import PostShiftViewerModal from '../components/PostShiftViewerModal';
+import CalendarView from '../components/CalendarView';
 
 const PIE_COLORS = ['#3b82f6', '#f59e0b', '#ef4444', '#64748b'];
 
@@ -33,6 +34,7 @@ export default function AdminDashboard() {
   const [mainTab, setMainTab] = useState(location.state?.tab || 'notam'); // 'notam' | 'briefing' | 'postshift'
   const [briefings, setBriefings] = useState([]);
   const [postshifts, setPostshifts] = useState([]);
+  const [events, setEvents] = useState([]);
   const [selectedBriefing, setSelectedBriefing] = useState(null);
   const [selectedPostShift, setSelectedPostShift] = useState(null);
 
@@ -48,6 +50,12 @@ export default function AdminDashboard() {
         .then(data => setPostshifts(Array.isArray(data) ? data : []))
         .catch(() => setPostshifts([]));
     }
+    
+    // Always fetch events for the Upcoming Events widget in notam tab, or for calendar tab
+    fetch('http://localhost:3000/api/events')
+      .then(r => r.json())
+      .then(data => setEvents(Array.isArray(data) ? data : []))
+      .catch(() => setEvents([]));
   }, [mainTab]);
 
   const handleDeleteBriefing = async (id, e) => {
@@ -292,6 +300,19 @@ export default function AdminDashboard() {
             </span>
           )}
         </button>
+        <button
+          onClick={() => setMainTab('calendar')}
+          style={{
+            padding: '0.6rem 1.25rem', border: 'none', background: 'transparent',
+            fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
+            borderBottom: mainTab === 'calendar' ? '2px solid #2563eb' : '2px solid transparent',
+            color: mainTab === 'calendar' ? '#2563eb' : '#64748b',
+            marginBottom: -2, transition: 'all 0.2s',
+          }}
+        >
+          <Calendar size={15} style={{ marginRight: 6, verticalAlign: 'middle' }} />
+          Calendar
+        </button>
       </div>
       {/* ── NOTAM TAB CONTENT ──────────────────────────── */}
       {mainTab === 'notam' && (<>
@@ -452,12 +473,61 @@ export default function AdminDashboard() {
 
       {/* Activity + Table Row */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2.5fr', gap: '1.5rem' }}>
-        {/* Recent Activity */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '600px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-            <Activity size={18} color="var(--primary)" />
-            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Aktivitas Terbaru</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* Upcoming Events Widget */}
+          <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Calendar size={18} color="var(--primary)" /> Agenda Terdekat
+              </h3>
+              <button 
+                onClick={() => setMainTab('calendar')} 
+                style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Lihat Semua
+              </button>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {events
+                .filter(ev => {
+                  const evDate = new Date(ev.date);
+                  const today = new Date();
+                  today.setHours(0,0,0,0);
+                  return evDate >= today;
+                })
+                .sort((a, b) => new Date(a.date) - new Date(b.date))
+                .slice(0, 3)
+                .map(ev => (
+                  <div key={ev.id} style={{ 
+                    padding: '0.75rem', 
+                    background: '#f8fafc', 
+                    borderRadius: '8px', 
+                    borderLeft: `4px solid ${ev.category === 'Meeting' ? '#8b5cf6' : ev.category === 'Operation' ? '#f59e0b' : '#3b82f6'}`,
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => setMainTab('calendar')}>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#0f172a', marginBottom: '0.25rem' }}>{ev.title}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: '#64748b' }}>
+                      <span>{new Date(ev.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
+                      <span>{ev.isAllDay ? 'All Day' : ev.startTime}</span>
+                    </div>
+                  </div>
+              ))}
+              {events.filter(ev => new Date(ev.date) >= new Date(new Date().setHours(0,0,0,0))).length === 0 && (
+                <div style={{ padding: '1rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem', background: '#f8fafc', borderRadius: '8px' }}>
+                  Tidak ada agenda terdekat
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* Recent Activity */}
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '400px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+              <Activity size={18} color="var(--primary)" />
+              <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Aktivitas Terbaru</h3>
+            </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0', flex: 1, overflowY: 'auto', paddingRight: '4px' }}>
             {recentActivity.map((notam, idx) => {
               const formData = notam.formData || {};
@@ -516,6 +586,7 @@ export default function AdminDashboard() {
               );
             })}
           </div>
+        </div>
         </div>
 
         {/* Table */}
@@ -776,6 +847,11 @@ export default function AdminDashboard() {
             </div>
           )}
         </div>
+      )}
+
+      {/* ── CALENDAR TAB CONTENT ──────────────────────────── */}
+      {mainTab === 'calendar' && (
+        <CalendarView />
       )}
 
       {selectedNotam && (

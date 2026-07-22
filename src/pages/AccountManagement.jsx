@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { UserPlus, Image as ImageIcon, Lock, User, Briefcase, CheckCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { UserPlus, Image as ImageIcon, Lock, User, Briefcase, CheckCircle, Users, Trash2, Power, PowerOff, AlertTriangle } from 'lucide-react';
 
 export default function AccountManagement() {
   const [formData, setFormData] = useState({
@@ -13,6 +13,61 @@ export default function AccountManagement() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [actionTarget, setActionTarget] = useState(null);
+
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch('http://localhost:3000/api/users?all=true');
+      const data = await res.json();
+      setUsers(data);
+    } catch (err) {
+      console.error('Failed to fetch users', err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const handleActionClick = (id, initial, type) => {
+    setActionTarget({ id, initial, type });
+  };
+
+  const confirmAction = async () => {
+    if (!actionTarget) return;
+    const { id, type } = actionTarget;
+    
+    let url = `http://localhost:3000/api/users/${id}`;
+    let method = 'DELETE';
+    if (type === 'deactivate') {
+      url = `${url}/deactivate`;
+      method = 'PUT';
+    } else if (type === 'activate') {
+      url = `${url}/activate`;
+      method = 'PUT';
+    }
+
+    try {
+      const res = await fetch(url, { method });
+      const data = await res.json();
+      if (data.success) {
+        if (type === 'delete') {
+          setUsers(users.filter(u => u.id !== id));
+        } else {
+          setUsers(users.map(u => u.id === id ? { ...u, isActive: type === 'activate' } : u));
+        }
+        setActionTarget(null);
+      } else {
+        alert(data.message || 'Gagal memproses aksi pada akun');
+      }
+    } catch (err) {
+      alert('Terjadi kesalahan koneksi');
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -63,6 +118,7 @@ export default function AccountManagement() {
         setFormData({ initial: '', nama: '', jabatan: '', password: '' });
         setFile(null);
         setPreview('');
+        fetchUsers();
       } else {
         setError(result.message || result.error || 'Gagal menambahkan karyawan');
       }
@@ -212,7 +268,140 @@ export default function AccountManagement() {
             </button>
           </form>
         </div>
+
+        <div className="card" style={{ marginTop: '2rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #e2e8f0' }}>
+            <Users color="var(--primary)" size={24} />
+            <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Daftar Karyawan</h2>
+          </div>
+          
+          {loadingUsers ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>Memuat daftar karyawan...</div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                    <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: '#475569' }}>INITIAL</th>
+                    <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: '#475569' }}>NAMA</th>
+                    <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: '#475569' }}>STATUS</th>
+                    <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 600, color: '#475569' }}>AKSI</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.filter(u => !['DY', 'IB', 'YD', 'AY', 'IW', 'EMPLOYEE'].includes(u.initial.toUpperCase())).map(u => (
+                    <tr key={u.id} style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: u.isActive === false ? '#fef2f2' : 'transparent' }}>
+                      <td style={{ padding: '0.75rem 1rem', fontWeight: 500 }}>{u.initial}</td>
+                      <td style={{ padding: '0.75rem 1rem' }}>{u.nama}</td>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        {u.isActive === false ? (
+                          <span style={{ backgroundColor: '#fee2e2', color: '#b91c1c', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>Nonaktif</span>
+                        ) : (
+                          <span style={{ backgroundColor: '#d1fae5', color: '#065f46', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>Aktif</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                          {u.isActive !== false ? (
+                            <button 
+                              onClick={() => handleActionClick(u.id, u.initial, 'deactivate')}
+                              title="Nonaktifkan"
+                              style={{ background: 'transparent', border: '1px solid #f59e0b', color: '#f59e0b', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', fontWeight: 500 }}
+                            >
+                              <PowerOff size={14} /> Nonaktifkan
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => handleActionClick(u.id, u.initial, 'activate')}
+                              title="Aktifkan"
+                              style={{ background: 'transparent', border: '1px solid #10b981', color: '#10b981', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', fontWeight: 500 }}
+                            >
+                              <Power size={14} /> Aktifkan
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => handleActionClick(u.id, u.initial, 'delete')}
+                            title="Hapus Permanen"
+                            style={{ background: 'transparent', border: '1px solid #ef4444', color: '#ef4444', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', fontWeight: 500 }}
+                          >
+                            <Trash2 size={14} /> Hapus
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {users.filter(u => !['DY', 'IB', 'YD', 'AY', 'IW', 'EMPLOYEE'].includes(u.initial.toUpperCase())).length === 0 && (
+                    <tr>
+                      <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>Belum ada data karyawan</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {actionTarget && (
+        <div style={{
+          position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999,
+          padding: '1rem', animation: 'fadeIn 0.2s ease-out'
+        }}>
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(16px)',
+            borderRadius: '16px', padding: '2rem', width: '100%', maxWidth: '400px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid rgba(255,255,255,0.5)',
+            textAlign: 'center', animation: 'slideUp 0.3s ease-out'
+          }}>
+            <div style={{
+              width: '50px', height: '50px', borderRadius: '50%', 
+              background: actionTarget.type === 'activate' ? '#d1fae5' : actionTarget.type === 'deactivate' ? '#fef3c7' : '#fee2e2',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem',
+              color: actionTarget.type === 'activate' ? '#10b981' : actionTarget.type === 'deactivate' ? '#f59e0b' : '#ef4444'
+            }}>
+              {actionTarget.type === 'delete' ? <AlertTriangle size={24} /> : actionTarget.type === 'activate' ? <Power size={24} /> : <PowerOff size={24} />}
+            </div>
+            
+            <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.25rem', color: '#0f172a' }}>
+              {actionTarget.type === 'delete' ? 'Hapus Permanen?' : actionTarget.type === 'activate' ? 'Aktifkan Akun?' : 'Nonaktifkan Akun?'}
+            </h3>
+            <p style={{ margin: '0 0 1.5rem', color: '#64748b', fontSize: '0.95rem', lineHeight: '1.5' }}>
+              {actionTarget.type === 'delete' ? (
+                <>Anda yakin ingin menghapus akun <strong>{actionTarget.initial}</strong> secara permanen? Jika akun ini pernah membuat form, penghapusan akan ditolak.</>
+              ) : actionTarget.type === 'activate' ? (
+                <>Anda yakin ingin mengaktifkan akun <strong>{actionTarget.initial}</strong>? Akun ini akan dapat login kembali.</>
+              ) : (
+                <>Anda yakin ingin menonaktifkan akun <strong>{actionTarget.initial}</strong>? Akun ini tidak akan dapat login lagi.</>
+              )}
+            </p>
+            
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+              <button 
+                onClick={() => setActionTarget(null)}
+                style={{
+                  padding: '0.75rem 1.5rem', borderRadius: '8px', border: '1px solid #cbd5e1',
+                  background: 'white', color: '#475569', fontWeight: 600, cursor: 'pointer', flex: 1
+                }}
+              >
+                Batal
+              </button>
+              <button 
+                onClick={confirmAction}
+                style={{
+                  padding: '0.75rem 1.5rem', borderRadius: '8px', border: 'none',
+                  background: actionTarget.type === 'activate' ? '#10b981' : actionTarget.type === 'deactivate' ? '#f59e0b' : '#ef4444', 
+                  color: 'white', fontWeight: 600, cursor: 'pointer', flex: 1,
+                  boxShadow: actionTarget.type === 'activate' ? '0 4px 6px -1px rgba(16, 185, 129, 0.2)' : actionTarget.type === 'deactivate' ? '0 4px 6px -1px rgba(245, 158, 11, 0.2)' : '0 4px 6px -1px rgba(239, 68, 68, 0.2)'
+                }}
+              >
+                {actionTarget.type === 'delete' ? 'Ya, Hapus' : actionTarget.type === 'activate' ? 'Ya, Aktifkan' : 'Ya, Nonaktifkan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -39,6 +39,10 @@ const User = sequelize.define('User', {
   tanda_tangan: {
     type: DataTypes.STRING,
     allowNull: true // Store filename/path of the signature
+  },
+  isActive: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
   }
 });
 
@@ -171,6 +175,54 @@ const PostShift = sequelize.define('PostShift', {
   }
 });
 
+// Define Event Model
+const Event = sequelize.define('Event', {
+  id: {
+    type: DataTypes.STRING,
+    primaryKey: true
+  },
+  title: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  date: {
+    type: DataTypes.STRING,
+    allowNull: false // Format: YYYY-MM-DD
+  },
+  startTime: {
+    type: DataTypes.STRING,
+    allowNull: true // Format: HH:MM
+  },
+  endTime: {
+    type: DataTypes.STRING,
+    allowNull: true // Format: HH:MM
+  },
+  isAllDay: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  category: {
+    type: DataTypes.STRING,
+    defaultValue: 'Other'
+  },
+  notes: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  location: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  url: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  attachment: {
+    type: DataTypes.STRING,
+    allowNull: true
+  }
+});
+
 User.hasMany(Briefing, { foreignKey: 'createdBy' });
 Briefing.belongsTo(User, { foreignKey: 'createdBy' });
 
@@ -183,4 +235,4 @@ const initDb = async () => {
   console.log("Database synchronized");
 };
 
-module.exports = { sequelize, User, Notam, Briefing, PostShift, initDb };
+module.exports = { sequelize, User, Notam, Briefing, PostShift, Event, initDb };

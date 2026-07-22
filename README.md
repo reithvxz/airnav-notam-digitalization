@@ -11,7 +11,8 @@ Sistem digitalisasi pengelolaan **Notice to Airmen (NOTAM)** berbasis web yang d
 - 🔄 **Opsi Operational Assessment**: Tersedia opsi untuk murni mencetak 1 halaman Form Operational Assessment terpisah dari Permohonan Penerbitan NOTAM.
 - 📊 **Visualisasi Data Kaya**: Admin Dashboard sekarang dilengkapi dengan 3 Grafik interaktif: Statistik Bulanan, Distribusi Jenis, dan Distribusi Status NOTAM.
 - 🔒 **Tanda Tangan Otomatis**: Form cetak PDF akan secara otomatis membubuhkan nama dan pindaian tanda tangan milik pembuat surat (diambil dari profil akun yang *login*).
-
+- 📅 **Sistem Kalender Pribadi (Baru!)**: Modul kalender interaktif (menggunakan `@fullcalendar/react`) untuk mencatat agenda, *meeting*, dan *deadline*. Dilengkapi fitur deteksi hari libur nasional otomatis, panel "Upcoming Reminders" cerdas (H-1, H-3, dll.), dan filter list berdasar kategori warna-warni yang vibran.
+- 🎨 **Custom Alert & Modals**: Konfirmasi penghapusan dan *alert* sistem menggunakan komponen modal *custom* yang cantik (menggantikan *default pop-up browser* kaku).
 ## Fitur Utama
 
 Aplikasi ini memiliki dua Role pengguna utama:
@@ -22,6 +23,7 @@ Aplikasi ini memiliki dua Role pengguna utama:
    - **Manajemen Akun**: Penambahan akun karyawan baru, lengkap dengan *upload* file tanda tangan.
    - **NOTAM Replace & Cancel**: Manajemen siklus hidup NOTAM untuk memperbarui atau membatalkan NOTAM. NOTAM yang direplace/cancel otomatis terhubung dengan surat referensinya dan memperbarui statusnya.
    - **Cetak PDF Otomatis**: Generator dokumen PDF standar AirNav secara *on-the-fly* berdasarkan data form yang disubmit.
+   - **Personal Calendar & Reminders**: Kalender untuk merencanakan agenda internal, ditandai dengan deteksi hari libur otomatis. Memiliki panel notifikasi yang melacak *event* dalam kurun waktu 7 hari ke depan.
 
 2. **Karyawan Biasa**
    - **Dashboard Karyawan**: Akses untuk melihat seluruh dokumen NOTAM yang sudah diterbitkan dalam format kartu yang estetik.
