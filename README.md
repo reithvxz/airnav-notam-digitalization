@@ -1,42 +1,43 @@
-# AirNav NOTAM System
+# AirNav NOTAM & Manajemen Shift System
 
-Sistem digitalisasi pengelolaan **Notice to Airmen (NOTAM)** berbasis web yang dikembangkan khusus untuk keperluan internal **AirNav Indonesia Cabang Surabaya**. Aplikasi ini menggantikan proses pengajuan dan pencetakan NOTAM manual menjadi proses digital yang terpusat, cepat, dan mudah dipantau.
+Sistem digitalisasi terpadu untuk pengelolaan **Notice to Airmen (NOTAM)** dan **Manajemen Operasional Shift** berbasis web yang dikembangkan khusus untuk internal **AirNav Indonesia Cabang Surabaya**. Aplikasi ini merevolusi proses pengajuan manual menjadi terpusat, analitis, dan digital seutuhnya.
 
-## Pembaruan Terbaru (Update Database & UI)
-- 📝 **Pre-Shift & Post-Shift Interaktif**: Fitur pembuatan Form Pre-Shift Briefing dan Post-Shift Review baru dengan UI checklist yang sangat dinamis (memungkinkan transisi otomatis dari format centang ke keterangan teks), serta pengaturan dinamis untuk default waktu shift.
-- ✨ **Custom UI Pickers**: Menghapus tampilan *default browser* dan menggantinya dengan komponen Pop-Up *custom* bergaya premium untuk pemilih Tanggal (*Date Picker*), Waktu (*Time Picker*), dan pilihan Manager.
-- 🗄️ **Migrasi ke MySQL**: Aplikasi kini telah didukung oleh backend (Express.js) dan database relasional (MySQL) menggunakan Sequelize ORM.
-- 🔐 **Manajemen Akun Terpusat**: Manager (Admin) sekarang dapat membuat akun untuk anggota tim (PT MANAGER OPERASI APP-TWR) secara langsung melalui menu Manajemen Akun.
-- 🎨 **Modern Login Page**: Halaman login dirombak total menggunakan efek *Glassmorphism*, dukungan ganti kata sandi mandiri, serta *case-sensitive username*.
-- 🔄 **Opsi Operational Assessment**: Tersedia opsi untuk murni mencetak 1 halaman Form Operational Assessment terpisah dari Permohonan Penerbitan NOTAM.
-- 📊 **Visualisasi Data Kaya**: Admin Dashboard sekarang dilengkapi dengan 3 Grafik interaktif: Statistik Bulanan, Distribusi Jenis, dan Distribusi Status NOTAM.
-- 🔒 **Tanda Tangan Otomatis**: Form cetak PDF akan secara otomatis membubuhkan nama dan pindaian tanda tangan milik pembuat surat (diambil dari profil akun yang *login*).
-- 📅 **Sistem Kalender Pribadi (Baru!)**: Modul kalender interaktif (menggunakan `@fullcalendar/react`) untuk mencatat agenda, *meeting*, dan *deadline*. Dilengkapi fitur deteksi hari libur nasional otomatis, panel "Upcoming Reminders" cerdas (H-1, H-3, dll.), dan filter list berdasar kategori warna-warni yang vibran.
-- 🎨 **Custom Alert & Modals**: Konfirmasi penghapusan dan *alert* sistem menggunakan komponen modal *custom* yang cantik (menggantikan *default pop-up browser* kaku).
+## Pembaruan Terbaru (Update Database, UI & Analitik)
+- 📊 **Visualisasi Dashboard Ekstensif (BARU!)**: Admin Dashboard sekarang dirombak total menjadi 2 pilar utama dengan **12 Grafik Interaktif** menggunakan *Recharts*!
+  - **NOTAM (6 Grafik)**: Distribusi Status, Distribusi Jenis, Distribusi Kategori (Aerodrome/En-route), Aktivitas per Personil, Tren Penerbitan Harian, dan Komparasi Aktif vs Selesai.
+  - **Pre/Post-Shift (6 Grafik)**: Komparasi Pre vs Post per Shift, Distribusi Shift, Rasio Keterangan/Anomali Tambahan, Aktivitas per Supervisor, Aktivitas Harian, dan Tren Kepatuhan Pengumpulan Mingguan.
+  - Dilengkapi dengan 10 Kartu Metrik Interaktif (*clickable*) untuk navigasi cepat.
+- 📝 **Pre-Shift & Post-Shift Dinamis**: Fitur pembuatan Form *Pre-Shift Briefing* dan *Post-Shift Review* dengan UI *checklist* yang sangat cerdas (transisi otomatis ke mode teks untuk mencatat anomali), beserta pengaturan *default* waktu otomatis.
+- ✨ **Custom UI Pickers & Modals**: Menghapus tampilan *default browser* secara menyeluruh dan menggantinya dengan komponen Pop-Up *custom* bergaya premium untuk *Date Picker*, *Time Picker*, *Custom Select*, serta Modal konfirmasi penghapusan.
+- 🗄️ **Full-Stack MySQL**: Didukung oleh backend *Express.js* dan *MySQL* via *Sequelize ORM* untuk pengolahan relasional yang stabil.
+- 🔐 **Manajemen Akun Terpusat**: Manager (Admin) memegang penuh kendali pembuatan akun untuk anggota tim operasi beserta dengan unggahan foto tanda tangan digital.
+- 🎨 **Modern Glassmorphism UI**: Antarmuka *Login* dan tata letak *Sidebar* yang dikustomisasi dengan estetika *Glassmorphism*, palet biru premium, dan responsivitas halus.
+- 🔒 **Tanda Tangan & Header Otomatis**: Generator PDF menggunakan `html2pdf.js` untuk mencetak dokumen siap rilis yang secara otomatis dibubuhi kop surat, *layout* standar, dan pindaian tanda tangan personil yang mengajukan.
+- 📅 **Sistem Kalender Interaktif**: Modul kalender dengan peringatan cerdas (menggunakan `@fullcalendar/react`). Mendeteksi hari libur nasional, menampilkan *Upcoming Reminders* (H-3, H-1), dan pencatatan agenda berkategori warna.
+
 ## Fitur Utama
 
-Aplikasi ini memiliki dua Role pengguna utama:
+Aplikasi ini mendistribusikan akses berdasarkan Role pengguna:
 
 1. **Admin / Manajemen Operasi**
-   - **Dashboard Statistik**: Visualisasi data surat NOTAM yang masuk, aktif, dan akan datang secara interaktif melalui *charts*.
-   - **Pembuatan NOTAM (Create)**: Form digital lengkap untuk pengajuan NOTAM baru (termasuk *Assessment Only*). 
-   - **Manajemen Akun**: Penambahan akun karyawan baru, lengkap dengan *upload* file tanda tangan.
-   - **NOTAM Replace & Cancel**: Manajemen siklus hidup NOTAM untuk memperbarui atau membatalkan NOTAM. NOTAM yang direplace/cancel otomatis terhubung dengan surat referensinya dan memperbarui statusnya.
-   - **Cetak PDF Otomatis**: Generator dokumen PDF standar AirNav secara *on-the-fly* berdasarkan data form yang disubmit.
-   - **Personal Calendar & Reminders**: Kalender untuk merencanakan agenda internal, ditandai dengan deteksi hari libur otomatis. Memiliki panel notifikasi yang melacak *event* dalam kurun waktu 7 hari ke depan.
+   - **Dashboard Terintegrasi**: Mengakses 12 Grafik visualisasi kaya data untuk memantau aktivitas pembuatan NOTAM dan kepatuhan pengumpulan laporan pergantian Shift bulanan.
+   - **Modul NOTAM**: Pembuatan form digital lengkap (termasuk *Assessment Only*), siklus manajemen *Replace* & *Cancel* terhubung, dan ekspor langsung ke format PDF baku.
+   - **Modul Manajemen Shift**: Pengajuan *Pre-Shift* dan *Post-Shift* dengan fitur otomatisasi waktu dan *checklist* interaktif yang menangkap temuan operasional.
+   - **Modul Pengguna**: Mengatur akun sistem dan memverifikasi tanda tangan digital karyawan.
+   - **Modul Kalender**: Merencanakan agenda dengan pengingat dan penanda libur otomatis.
 
 2. **Karyawan Biasa**
-   - **Dashboard Karyawan**: Akses untuk melihat seluruh dokumen NOTAM yang sudah diterbitkan dalam format kartu yang estetik.
-   - **Filter Waktu & Status**: Memungkinkan pencarian dan penyaringan surat NOTAM berdasarkan Waktu Mulai, Status (Terbit, Incoming, Selesai), dan Jenis NOTAM (New, Replace, Cancel, Assessment).
-   - **Viewer & Downloader PDF**: Fitur melihat langsung dokumen PDF NOTAM di dalam aplikasi (tanpa perlu membuka tab baru) dan mengunduhnya.
+   - **Dashboard Karyawan**: Melihat seluruh dokumen (NOTAM dan Shift) yang telah diterbitkan dengan format kartu yang rapi.
+   - **Filter Waktu & Status Pintar**: Memungkinkan pencarian dokumen yang kuat berdasarkan waktu, status, pembuat, dan jenis.
+   - **PDF Viewer Built-in**: Fitur pratinjau dokumen langsung di dalam aplikasi (tanpa membuka *tab* baru) untuk pengalaman yang instan.
 
 ## Teknologi yang Digunakan
 
-- **Frontend**: [React.js](https://reactjs.org/) + [Vite](https://vitejs.dev/) + Vanilla CSS (Glassmorphism).
+- **Frontend**: [React.js](https://reactjs.org/) + [Vite](https://vitejs.dev/) + Vanilla CSS.
 - **Backend**: Node.js + Express.js.
 - **Database**: MySQL 8.0+ dengan Sequelize ORM.
-- **Icons & Charts**: Lucide React & Recharts.
-- **PDF Generation**: `html2pdf.js` untuk merender komponen React ke format A4.
+- **Visualisasi & Ikon**: Recharts & Lucide React.
+- **PDF Generation**: `html2pdf.js`.
 
 ## Persiapan & Menjalankan Project Locally
 

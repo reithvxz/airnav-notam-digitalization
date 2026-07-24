@@ -4,6 +4,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
+import { useLocation } from 'react-router-dom';
 import { Plus, X, Calendar, MapPin, AlignLeft, Link as LinkIcon, Paperclip, Clock, Trash2, ChevronDown, Bell, AlertTriangle } from 'lucide-react';
 
 const CATEGORY_COLORS = {
@@ -13,7 +14,7 @@ const CATEGORY_COLORS = {
   Maintenance: '#eab308', // Kuning
   Deadline: '#ef4444',    // Merah
   Event: '#10b981',       // Hijau
-  Other: '#ec4899'        // Pink vibrant (menggantikan abu-abu)
+  Other: '#ec4899'        // Pink vibrant
 };
 
 export default function CalendarView() {
@@ -36,11 +37,26 @@ export default function CalendarView() {
     category: 'Other', notes: '', location: '', url: '', attachment: ''
   });
   const calendarRef = useRef(null);
+  const location = useLocation();
 
   useEffect(() => {
     fetchEvents();
     fetchHolidays();
   }, []);
+
+  useEffect(() => {
+    if (location.state?.targetDate && calendarRef.current) {
+      const calendarApi = calendarRef.current.getApi();
+      if (calendarApi) {
+        calendarApi.gotoDate(location.state.targetDate);
+        setCurrentDate(new Date(location.state.targetDate));
+      }
+    }
+    if (location.state?.targetEvent) {
+      setSelectedEvent(location.state.targetEvent);
+      setIsDetailOpen(true);
+    }
+  }, [location.state]);
 
   const fetchEvents = async () => {
     try {
@@ -289,7 +305,7 @@ export default function CalendarView() {
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: currentView === 'listAll' ? '1fr' : '1fr 320px', gap: '1.5rem', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem', alignItems: 'start' }}>
         {/* Left Side: Calendar Wrapper */}
         <div style={{ 
           background: 'white', 
@@ -309,7 +325,10 @@ export default function CalendarView() {
           zIndex: 10,
           display: 'flex',
           gap: '0.5rem',
-          pointerEvents: 'none' // Prevent this absolute container from blocking toolbar buttons
+          pointerEvents: 'none', // Prevent this absolute container from blocking toolbar buttons
+          width: '100%',
+          maxWidth: '700px',
+          justifyContent: 'center'
         }}>
           {currentView === 'listAll' ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', pointerEvents: 'auto', marginTop: '-0.25rem' }}>
@@ -517,47 +536,6 @@ export default function CalendarView() {
           }}
         />
         </div>
-
-        {/* Right Side: Reminders Panel (Only shown in Month View) */}
-        {currentView !== 'listAll' && (
-          <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
-            <h3 style={{ margin: '0 0 1.25rem 0', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0f172a' }}>
-              <Bell size={20} color="#ef4444" /> Upcoming Reminders
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {upcomingReminders.length === 0 ? (
-                <div style={{ fontSize: '0.9rem', color: '#64748b', textAlign: 'center', padding: '2rem 0', background: 'white', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>Tidak ada agenda dalam 7 hari ke depan.</div>
-              ) : (
-                upcomingReminders.map(ev => {
-                  const evDate = new Date(ev.date);
-                  evDate.setHours(0, 0, 0, 0);
-                  const diffTime = evDate.getTime() - new Date().setHours(0,0,0,0);
-                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                  
-                  let label = '';
-                  if (diffDays === 0) label = 'Hari Ini!';
-                  else if (diffDays === 1) label = 'Besok';
-                  else label = `H-${diffDays}`;
-
-                  return (
-                    <div key={ev.id} onClick={() => { setSelectedEvent(ev); setIsDetailOpen(true); }} style={{ background: 'white', padding: '1rem', borderRadius: '10px', border: '1px solid #e2e8f0', borderLeft: `4px solid ${CATEGORY_COLORS[ev.category] || CATEGORY_COLORS.Other}`, cursor: 'pointer', transition: 'transform 0.2s, boxShadow 0.2s' }} onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)'; }} onMouseOut={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                        <div style={{ fontWeight: 600, fontSize: '0.95rem', color: '#0f172a', lineHeight: '1.4' }}>{ev.title}</div>
-                        <div style={{ background: diffDays <= 1 ? '#fee2e2' : '#f1f5f9', color: diffDays <= 1 ? '#dc2626' : '#475569', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700, whiteSpace: 'nowrap', marginLeft: '0.5rem' }}>
-                          {label}
-                        </div>
-                      </div>
-                      <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Calendar size={14} />
-                        {new Date(ev.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                      </div>
-                    </div>
-                  )
-                })
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Add/Edit Modal */}

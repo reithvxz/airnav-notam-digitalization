@@ -1,14 +1,15 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNotams } from '../context/NotamContext';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Plus, FileText, CheckCircle, Clock, TrendingUp, Activity, MapPin, CheckSquare, Trash2, Calendar } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { CustomSelect } from '../components/CustomPickers';
 import PdfViewerModal from '../components/PdfViewerModal';
 import BriefingViewerModal from '../components/BriefingViewerModal';
 import PostShiftViewerModal from '../components/PostShiftViewerModal';
 import CalendarView from '../components/CalendarView';
 
-const PIE_COLORS = ['#3b82f6', '#f59e0b', '#ef4444', '#64748b'];
+const PIE_COLORS = ['#1e3a8a', '#2563eb', '#60a5fa', '#bfdbfe'];
 
 function timeAgo(dateStr) {
   const now = new Date();
@@ -25,13 +26,23 @@ function timeAgo(dateStr) {
   return `${diffMonths} bulan lalu`;
 }
 
-export default function AdminDashboard() {
+export default function AdminDashboard({ defaultTab = 'overview' }) {
   const { notams } = useNotams();
   const [statusFilter, setStatusFilter] = useState('all');
   const [jenisFilter, setJenisFilter] = useState('all');
   const [selectedNotam, setSelectedNotam] = useState(null);
   const location = useLocation();
-  const [mainTab, setMainTab] = useState(location.state?.tab || 'notam'); // 'notam' | 'briefing' | 'postshift'
+  const navigate = useNavigate();
+  const [mainTab, setMainTab] = useState(defaultTab);
+  const [overviewMode, setOverviewMode] = useState('notam');
+  
+  useEffect(() => {
+    setMainTab(defaultTab);
+    if (defaultTab === 'notam' && location.state?.statusFilter) {
+      setStatusFilter(location.state.statusFilter);
+    }
+  }, [defaultTab, location.state]);
+
   const [briefings, setBriefings] = useState([]);
   const [postshifts, setPostshifts] = useState([]);
   const [events, setEvents] = useState([]);
@@ -39,12 +50,13 @@ export default function AdminDashboard() {
   const [selectedPostShift, setSelectedPostShift] = useState(null);
 
   useEffect(() => {
-    if (mainTab === 'briefing') {
+    if (mainTab === 'briefing' || mainTab === 'overview') {
       fetch('http://localhost:3000/api/briefings')
         .then(r => r.json())
         .then(data => setBriefings(Array.isArray(data) ? data : []))
         .catch(() => setBriefings([]));
-    } else if (mainTab === 'postshift') {
+    }
+    if (mainTab === 'postshift' || mainTab === 'overview') {
       fetch('http://localhost:3000/api/postshifts')
         .then(r => r.json())
         .then(data => setPostshifts(Array.isArray(data) ? data : []))
@@ -76,17 +88,17 @@ export default function AdminDashboard() {
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
 
-  const { activeNotams, incomingNotams, pastNotams, completedThisMonth, thisMonthCount, filteredNotams, chartData, pieData, statusPieData, recentActivity } = useMemo(() => {
+  const { activeNotams, incomingNotams, pastNotams, completedThisMonth, thisMonthCount, filteredNotams, chartData, pieData, statusPieData, recentActivity, notamCreatorData, notamCategoryData, notamTrendData } = useMemo(() => {
     const _now = new Date();
     const _month = _now.getMonth();
     const _year = _now.getFullYear();
+    const daysInMonth = new Date(_year, _month + 1, 0).getDate();
+    const daysCount = new Array(daysInMonth).fill(0);
     let active = [];
     let incoming = [];
     let past = [];
     let completedMonth = 0;
     let monthCount = 0;
-
-    const monthsCount = Array(12).fill(0);
 
     // Pie data counters
     let newCount = 0;
@@ -94,15 +106,32 @@ export default function AdminDashboard() {
     let cancelCount = 0;
     let assessmentCount = 0;
 
+    let categoryCounts = { 'Aerodrome': 0, 'En-route': 0, 'Warning': 0, 'Lainnya': 0 };
+    let creatorCounts = {};
+    let dailyCreated = new Array(daysInMonth).fill(0);
+    let dailyCompleted = new Array(daysInMonth).fill(0);
+
     const safeNotams = Array.isArray(notams) ? notams : [];
     safeNotams.forEach(notam => {
       const formData = notam.formData || {};
       const startTime = new Date(formData.waktuMulai || notam.waktuMulai || notam.createdAt);
       const endTime = new Date(formData.waktuSelesai || notam.waktuSelesai || notam.createdAt);
       const createdDate = new Date(notam.createdAt);
+      
+      const creator = formData.creatorName || notam.creatorName || notam.creator || notam.createdBy || 'Unknown';
+      creatorCounts[creator] = (creatorCounts[creator] || 0) + 1;
+
+      const category = formData.kategori || notam.kategori || 'Lainnya';
+      if (category.toLowerCase().includes('aerodrome')) categoryCounts['Aerodrome']++;
+      else if (category.toLowerCase().includes('en-route')) categoryCounts['En-route']++;
+      else if (category.toLowerCase().includes('warning')) categoryCounts['Warning']++;
+      else categoryCounts['Lainnya']++;
 
       if (endTime < _now) {
         past.push(notam);
+        if (endTime.getMonth() === _month && endTime.getFullYear() === _year) {
+          dailyCompleted[endTime.getDate() - 1]++;
+        }
       } else if (startTime <= _now) {
         active.push(notam);
       } else {
@@ -114,9 +143,8 @@ export default function AdminDashboard() {
       }
       if (createdDate.getMonth() === _month && createdDate.getFullYear() === _year) {
         monthCount++;
-      }
-      if (createdDate.getFullYear() === _year) {
-        monthsCount[createdDate.getMonth()]++;
+        daysCount[createdDate.getDate() - 1]++;
+        dailyCreated[createdDate.getDate() - 1]++;
       }
 
       const jenisNotam = formData.jenisNotam || notam.jenis || '';
@@ -126,8 +154,7 @@ export default function AdminDashboard() {
       else if (jenisNotam === 'Assessment Only') assessmentCount++;
     });
 
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-    const chart = monthsCount.map((count, index) => ({ name: monthNames[index], notams: count }));
+    const chart = daysCount.map((count, index) => ({ name: (index + 1).toString(), notams: count }));
 
     const pie = [
       { name: 'NOTAM New', value: newCount },
@@ -141,6 +168,19 @@ export default function AdminDashboard() {
       { name: 'Incoming', value: incoming.length },
       { name: 'Selesai', value: past.length },
     ].filter(d => d.value > 0);
+
+    const notamCreatorData = Object.keys(creatorCounts).map(name => ({ name, value: creatorCounts[name] })).sort((a,b) => b.value - a.value).slice(0, 5);
+    const notamCategoryData = [
+      { name: 'Aerodrome', value: categoryCounts['Aerodrome'] },
+      { name: 'En-route', value: categoryCounts['En-route'] },
+      { name: 'Warning', value: categoryCounts['Warning'] },
+      { name: 'Lainnya', value: categoryCounts['Lainnya'] }
+    ].filter(d => d.value > 0);
+    const notamTrendData = daysCount.map((_, i) => ({
+      name: (i + 1).toString(),
+      Dibuat: dailyCreated[i],
+      Selesai: dailyCompleted[i]
+    }));
 
     let filtered = notams;
     if (statusFilter === 'active') filtered = active;
@@ -164,9 +204,114 @@ export default function AdminDashboard() {
       chartData: chart,
       pieData: pie,
       statusPieData: statusPie,
-      recentActivity: recent
+      recentActivity: recent,
+      notamCreatorData,
+      notamCategoryData,
+      notamTrendData
     };
   }, [notams, statusFilter, jenisFilter]);
+
+  const shiftMetrics = useMemo(() => {
+    const _now = new Date();
+    const _month = _now.getMonth();
+    const _year = _now.getFullYear();
+    const daysInMonth = new Date(_year, _month + 1, 0).getDate();
+    
+    let thisMonthBriefing = 0;
+    let thisMonthPostshift = 0;
+    let pagi = 0, siang = 0, malam = 0;
+    let remarksCount = { standard: 0, remarks: 0 };
+    let supervisorCounts = {};
+    let weeklyCounts = { 'Mg 1': 0, 'Mg 2': 0, 'Mg 3': 0, 'Mg 4': 0 };
+    let dayCounts = { 'Minggu': 0, 'Senin': 0, 'Selasa': 0, 'Rabu': 0, 'Kamis': 0, 'Jumat': 0, 'Sabtu': 0 };
+    
+    const dailyData = new Array(daysInMonth).fill(0).map((_, i) => ({ name: (i + 1).toString(), pre: 0, post: 0 }));
+    const shiftCompareData = [
+      { name: 'PAGI', pre: 0, post: 0 },
+      { name: 'SIANG', pre: 0, post: 0 },
+      { name: 'MALAM', pre: 0, post: 0 }
+    ];
+
+    const getWeek = (date) => Math.min(Math.ceil(date.getDate() / 7), 4);
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+    briefings.forEach(b => {
+      const d = new Date(b.createdAt || b.date);
+      if (d.getMonth() === _month && d.getFullYear() === _year) {
+        thisMonthBriefing++;
+        dailyData[d.getDate() - 1].pre++;
+        
+        dayCounts[days[d.getDay()]]++;
+        weeklyCounts[`Mg ${getWeek(d)}`]++;
+        
+        const creator = b.creatorName || b.creator || 'Unknown';
+        supervisorCounts[creator] = (supervisorCounts[creator] || 0) + 1;
+        
+        const hasRemarks = b.checklist && b.checklist.some(c => c.checked === false);
+        if (hasRemarks) remarksCount.remarks++;
+        else remarksCount.standard++;
+
+        if (b.shift === 'PAGI') { pagi++; shiftCompareData[0].pre++; }
+        else if (b.shift === 'SIANG') { siang++; shiftCompareData[1].pre++; }
+        else if (b.shift === 'MALAM') { malam++; shiftCompareData[2].pre++; }
+      }
+    });
+
+    postshifts.forEach(p => {
+      const d = new Date(p.createdAt || p.date);
+      if (d.getMonth() === _month && d.getFullYear() === _year) {
+        thisMonthPostshift++;
+        dailyData[d.getDate() - 1].post++;
+        
+        dayCounts[days[d.getDay()]]++;
+        weeklyCounts[`Mg ${getWeek(d)}`]++;
+        
+        const creator = p.creatorName || p.creator || 'Unknown';
+        supervisorCounts[creator] = (supervisorCounts[creator] || 0) + 1;
+        
+        const hasRemarks = p.checklist && p.checklist.some(c => c.checked === false);
+        if (hasRemarks) remarksCount.remarks++;
+        else remarksCount.standard++;
+
+        if (p.shift === 'PAGI') { pagi++; shiftCompareData[0].post++; }
+        else if (p.shift === 'SIANG') { siang++; shiftCompareData[1].post++; }
+        else if (p.shift === 'MALAM') { malam++; shiftCompareData[2].post++; }
+      }
+    });
+
+    const shiftPieData = [
+      { name: 'PAGI', value: pagi, color: '#3b82f6' },
+      { name: 'SIANG', value: siang, color: '#f59e0b' },
+      { name: 'MALAM', value: malam, color: '#1e3a8a' }
+    ];
+    
+    const remarksPieData = [
+      { name: 'Sesuai Standar', value: remarksCount.standard, color: '#10b981' },
+      { name: 'Keterangan Khusus', value: remarksCount.remarks, color: '#ef4444' }
+    ].filter(d => d.value > 0);
+
+    const topSupervisors = Object.keys(supervisorCounts).map(name => ({ name, value: supervisorCounts[name] })).sort((a,b) => b.value - a.value).slice(0, 5);
+    const weeklyTrendData = Object.keys(weeklyCounts).map(name => ({ name, value: weeklyCounts[name] }));
+    
+    let mostActiveDay = '-';
+    let maxDayCount = -1;
+    for (const [day, count] of Object.entries(dayCounts)) {
+      if (count > maxDayCount) { maxDayCount = count; mostActiveDay = day; }
+    }
+    const totalForms = thisMonthBriefing + thisMonthPostshift;
+    
+    const mostActive = [...shiftPieData].sort((a,b) => b.value - a.value)[0] || { name: '-', value: 0 };
+
+    return { thisMonthBriefing, thisMonthPostshift, totalForms, shiftPieData, dailyData, mostActive, mostActiveDay, shiftCompareData, remarksPieData, topSupervisors, weeklyTrendData };
+  }, [briefings, postshifts]);
+
+  const shiftStatCards = [
+    { label: 'Total Form Keseluruhan', value: shiftMetrics.totalForms, icon: FileText, iconBg: '#eff6ff', iconColor: '#3b82f6', borderColor: '#3b82f6', action: () => setMainTab('briefing'), subtitle: 'Bulan ini' },
+    { label: 'Total Pre-Shift', value: shiftMetrics.thisMonthBriefing, icon: CheckSquare, iconBg: '#eff6ff', iconColor: '#3b82f6', borderColor: '#3b82f6', action: () => setMainTab('briefing'), subtitle: 'Bulan ini' },
+    { label: 'Total Post-Shift', value: shiftMetrics.thisMonthPostshift, icon: CheckCircle, iconBg: '#eff6ff', iconColor: '#3b82f6', borderColor: '#3b82f6', action: () => setMainTab('postshift'), subtitle: 'Bulan ini' },
+    { label: 'Shift Teraktif', value: shiftMetrics.mostActive.name, icon: Activity, iconBg: '#eff6ff', iconColor: '#3b82f6', borderColor: '#3b82f6', subtitle: `${shiftMetrics.mostActive.value} form`, action: () => setMainTab('briefing') },
+    { label: 'Hari Paling Aktif', value: shiftMetrics.mostActiveDay, icon: Calendar, iconBg: '#eff6ff', iconColor: '#3b82f6', borderColor: '#3b82f6', subtitle: 'Bulan ini', action: () => setMainTab('briefing') }
+  ];
 
   const statCards = [
     {
@@ -182,9 +327,9 @@ export default function AdminDashboard() {
       label: 'NOTAM Aktif',
       value: activeNotams.length,
       icon: CheckCircle,
-      iconBg: '#d1fae5',
-      iconColor: '#059669',
-      borderColor: '#059669',
+      iconBg: '#eff6ff',
+      iconColor: '#3b82f6',
+      borderColor: '#3b82f6',
       filterKey: 'active',
       subtitle: 'Sudah terbit'
     },
@@ -192,9 +337,9 @@ export default function AdminDashboard() {
       label: 'Incoming',
       value: incomingNotams.length,
       icon: Clock,
-      iconBg: '#fef3c7',
-      iconColor: '#d97706',
-      borderColor: '#d97706',
+      iconBg: '#eff6ff',
+      iconColor: '#3b82f6',
+      borderColor: '#3b82f6',
       filterKey: 'incoming',
       subtitle: 'Akan terbit'
     },
@@ -202,18 +347,18 @@ export default function AdminDashboard() {
       label: 'Bulan Ini',
       value: thisMonthCount,
       icon: TrendingUp,
-      iconBg: '#ede9fe',
-      iconColor: '#7c3aed',
-      borderColor: '#7c3aed',
+      iconBg: '#eff6ff',
+      iconColor: '#3b82f6',
+      borderColor: '#3b82f6',
       subtitle: `${completedThisMonth} selesai`
     },
     {
       label: 'Sudah Lewat',
       value: pastNotams.length,
       icon: Clock,
-      iconBg: '#f3f4f6',
-      iconColor: '#6b7280',
-      borderColor: '#6b7280',
+      iconBg: '#eff6ff',
+      iconColor: '#3b82f6',
+      borderColor: '#3b82f6',
       filterKey: 'past',
       subtitle: 'Tidak aktif'
     },
@@ -241,81 +386,48 @@ export default function AdminDashboard() {
   return (
     <div>
       {/* Header */}
-      <div className="page-header">
+      <div className="page-header" style={{ display: 'block', borderRadius: '12px', textAlign: 'center', background: '#eff6ff', border: '1px solid #bfdbfe', padding: '1.5rem', marginBottom: '2rem' }}>
         <div>
-          <h1 className="page-title">Dashboard Admin</h1>
-          <p className="page-subtitle">Ringkasan aktivitas dan manajemen NOTAM</p>
+          <h1 className="page-title" style={{ fontSize: '1.8rem', color: '#1e3a8a', margin: '0 0 0.5rem 0' }}>
+            {mainTab === 'overview' && 'Overview'}
+            {mainTab === 'notam' && 'NOTAM'}
+            {mainTab === 'briefing' && 'Pre-Shift'}
+            {mainTab === 'postshift' && 'Post-Shift'}
+            {mainTab === 'calendar' && 'Calendar'}
+          </h1>
+          <p className="page-subtitle" style={{ fontSize: '0.95rem', color: '#3b82f6', margin: 0, fontWeight: 500 }}>
+            {mainTab === 'overview' && 'Ringkasan seluruh data operasional AirNav cabang Surabaya.'}
+            {mainTab === 'notam' && 'Manajemen dan daftar penerbitan dokumen NOTAM.'}
+            {mainTab === 'briefing' && 'Checklist persiapan sebelum pergantian shift dimulai.'}
+            {mainTab === 'postshift' && 'Review operasional sesudah shift selesai.'}
+            {mainTab === 'calendar' && 'Jadwal dan agenda operasional.'}
+          </p>
         </div>
-
       </div>
 
-      {/* Main Tab Switch */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '2px solid #e2e8f0', paddingBottom: 0 }}>
-        <button
-          onClick={() => setMainTab('notam')}
-          style={{
-            padding: '0.6rem 1.25rem', border: 'none', background: 'transparent',
-            fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
-            borderBottom: mainTab === 'notam' ? '2px solid #2563eb' : '2px solid transparent',
-            color: mainTab === 'notam' ? '#2563eb' : '#64748b',
-            marginBottom: -2, transition: 'all 0.2s',
-          }}
-        >
-          <FileText size={15} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-          NOTAM
-        </button>
-        <button
-          onClick={() => setMainTab('briefing')}
-          style={{
-            padding: '0.6rem 1.25rem', border: 'none', background: 'transparent',
-            fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
-            borderBottom: mainTab === 'briefing' ? '2px solid #2563eb' : '2px solid transparent',
-            color: mainTab === 'briefing' ? '#2563eb' : '#64748b',
-            marginBottom: -2, transition: 'all 0.2s',
-          }}
-        >
-          <CheckSquare size={15} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-          Pre-Shift
-          {briefings.length > 0 && (
-            <span style={{ marginLeft: 6, background: '#2563eb', color: 'white', borderRadius: 10, fontSize: '0.7rem', padding: '1px 7px' }}>
-              {briefings.length}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setMainTab('postshift')}
-          style={{
-            padding: '0.6rem 1.25rem', border: 'none', background: 'transparent',
-            fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
-            borderBottom: mainTab === 'postshift' ? '2px solid #2563eb' : '2px solid transparent',
-            color: mainTab === 'postshift' ? '#2563eb' : '#64748b',
-            marginBottom: -2, transition: 'all 0.2s',
-          }}
-        >
-          <CheckSquare size={15} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-          Post-Shift
-          {postshifts.length > 0 && (
-            <span style={{ marginLeft: 6, background: '#2563eb', color: 'white', borderRadius: 10, fontSize: '0.7rem', padding: '1px 7px' }}>
-              {postshifts.length}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setMainTab('calendar')}
-          style={{
-            padding: '0.6rem 1.25rem', border: 'none', background: 'transparent',
-            fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
-            borderBottom: mainTab === 'calendar' ? '2px solid #2563eb' : '2px solid transparent',
-            color: mainTab === 'calendar' ? '#2563eb' : '#64748b',
-            marginBottom: -2, transition: 'all 0.2s',
-          }}
-        >
-          <Calendar size={15} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-          Calendar
-        </button>
+      {/* ── OVERVIEW TAB CONTENT ──────────────────────────── */}
+      {mainTab === 'overview' && (<>
+
+      {/* Toggle Buttons */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
+        <div style={{ display: 'inline-flex', background: '#f1f5f9', borderRadius: '8px', padding: '4px' }}>
+          <button 
+            onClick={() => setOverviewMode('notam')}
+            style={{ padding: '0.6rem 2rem', borderRadius: '6px', border: 'none', background: overviewMode === 'notam' ? 'white' : 'transparent', color: overviewMode === 'notam' ? '#1e3a8a' : '#64748b', fontWeight: overviewMode === 'notam' ? 700 : 500, cursor: 'pointer', boxShadow: overviewMode === 'notam' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', transition: 'all 0.2s', fontSize: '0.95rem' }}
+          >
+            NOTAM
+          </button>
+          <button 
+            onClick={() => setOverviewMode('shift')}
+            style={{ padding: '0.6rem 2rem', borderRadius: '6px', border: 'none', background: overviewMode === 'shift' ? 'white' : 'transparent', color: overviewMode === 'shift' ? '#1e3a8a' : '#64748b', fontWeight: overviewMode === 'shift' ? 700 : 500, cursor: 'pointer', boxShadow: overviewMode === 'shift' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', transition: 'all 0.2s', fontSize: '0.95rem' }}
+          >
+            Pre-Shift & Post-Shift
+          </button>
+        </div>
       </div>
-      {/* ── NOTAM TAB CONTENT ──────────────────────────── */}
-      {mainTab === 'notam' && (<>
+
+      {overviewMode === 'notam' ? (
+        <>
 
       {/* Stat Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1.25rem', marginBottom: '2rem' }}>
@@ -326,9 +438,12 @@ export default function AdminDashboard() {
             <div
               key={card.label}
               className="metric-card"
-              onClick={() => card.filterKey && setStatusFilter(card.filterKey)}
+              onClick={() => {
+                const filter = card.filterKey || 'all';
+                navigate('/admin/notams', { state: { statusFilter: filter } });
+              }}
               style={{
-                cursor: card.filterKey ? 'pointer' : 'default',
+                cursor: 'pointer',
                 borderColor: isSelected ? card.borderColor : 'rgba(255,255,255,0.5)',
                 boxShadow: isSelected ? `0 0 0 2px ${card.borderColor}33, 0 10px 25px rgba(0,0,0,0.05)` : undefined
               }}
@@ -348,278 +463,341 @@ export default function AdminDashboard() {
         })}
       </div>
 
-      {/* Charts Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
-        {/* Bar Chart */}
+      {/* 6 NOTAM Charts Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+        
+        {/* 1. Bar Chart: Distribusi Status */}
         <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <div>
-              <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Statistik Penerbitan</h3>
-              <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Tahun {currentYear}</p>
-            </div>
-            <div className="badge badge-blue" style={{ padding: '0.3rem 0.7rem' }}>
-              <Calendar size={14} style={{ marginRight: '4px' }} /> Bulanan
-            </div>
+          <div style={{ marginBottom: '1rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>1. Distribusi Status NOTAM</h3>
+            <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Semua NOTAM</p>
           </div>
           <div style={{ width: '100%', height: 260 }}>
-            <ResponsiveContainer>
-              <BarChart data={chartData.slice(0, currentMonth + 1)} barSize={28}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} allowDecimals={false} />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59,130,246,0.06)' }} />
-                <Bar dataKey="notams" fill="url(#barGradient)" radius={[6, 6, 0, 0]} />
-                <defs>
-                  <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#3b82f6" />
-                    <stop offset="100%" stopColor="#1d4ed8" />
-                  </linearGradient>
-                </defs>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Pie Chart */}
-        <div className="card">
-          <div style={{ marginBottom: '1rem' }}>
-            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Distribusi Jenis</h3>
-            <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Semua NOTAM</p>
-          </div>
-          <div style={{ width: '100%', height: 260, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {pieData.length > 0 ? (
-              <ResponsiveContainer>
-                <PieChart>
-                  <defs>
-                    <linearGradient id="pieGradient1" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#3b82f6" />
-                      <stop offset="100%" stopColor="#2563eb" />
-                    </linearGradient>
-                    <linearGradient id="pieGradient2" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#f59e0b" />
-                      <stop offset="100%" stopColor="#d97706" />
-                    </linearGradient>
-                    <linearGradient id="pieGradient3" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#10b981" />
-                      <stop offset="100%" stopColor="#059669" />
-                    </linearGradient>
-                    <linearGradient id="pieGradient4" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#64748b" />
-                      <stop offset="100%" stopColor="#475569" />
-                    </linearGradient>
-                  </defs>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="45%"
-                    innerRadius={55}
-                    outerRadius={85}
-                    paddingAngle={6}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {pieData.map((entry, index) => {
-                      const gradients = ["url(#pieGradient1)", "url(#pieGradient2)", "url(#pieGradient3)", "url(#pieGradient4)"];
-                      return <Cell key={`cell-${index}`} fill={gradients[index % gradients.length]} style={{ filter: `drop-shadow(0px 2px 4px rgba(0,0,0,0.1))` }} />
-                    })}
-                  </Pie>
-                  <Legend
-                    verticalAlign="bottom"
-                    iconType="circle"
-                    iconSize={8}
-                    wrapperStyle={{ fontSize: '13px', color: '#475569', fontWeight: 600 }}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <p style={{ color: 'var(--text-muted)' }}>Belum ada data</p>
-            )}
-          </div>
-        </div>
-
-        {/* Status Pie Chart -> Horizontal Bar Chart */}
-        <div className="card">
-          <div style={{ marginBottom: '1rem' }}>
-            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Distribusi Status</h3>
-            <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Semua NOTAM</p>
-          </div>
-          <div style={{ width: '100%', height: 260, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {statusPieData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={statusPieData} layout="vertical" barSize={28} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
                   <XAxis type="number" hide />
                   <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} width={70} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59,130,246,0.04)' }} />
+                  <Tooltip cursor={{ fill: 'rgba(59,130,246,0.04)' }} />
                   <Bar dataKey="value" radius={[0, 8, 8, 0]}>
                     {statusPieData.map((entry, index) => {
-                      const colors = {
-                        'Terbit': 'url(#pieGradient3)',
-                        'Incoming': 'url(#pieGradient2)',
-                        'Selesai': '#ef4444' // we can add more gradients if needed
-                      };
-                      return <Cell key={`cell-${index}`} fill={colors[entry.name]} />;
+                      const colors = { 'Terbit': '#1e3a8a', 'Incoming': '#3b82f6', 'Selesai': '#93c5fd' };
+                      return <Cell key={`cell-${index}`} fill={colors[entry.name] || '#3b82f6'} />;
                     })}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-            ) : (
-              <p style={{ color: 'var(--text-muted)' }}>Belum ada data</p>
-            )}
+            ) : <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>Belum ada data</p>}
+          </div>
+        </div>
+
+        {/* 2. Pie Chart: Distribusi Jenis */}
+        <div className="card">
+          <div style={{ marginBottom: '1rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>2. Distribusi Jenis NOTAM</h3>
+            <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Semua NOTAM</p>
+          </div>
+          <div style={{ width: '100%', height: 260 }}>
+            {pieData.length > 0 ? (
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie data={pieData} cx="50%" cy="45%" innerRadius={55} outerRadius={85} paddingAngle={6} dataKey="value" stroke="none">
+                    {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}
+                  </Pie>
+                  <Legend verticalAlign="bottom" iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '13px', color: '#475569', fontWeight: 600 }} />
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>Belum ada data</p>}
+          </div>
+        </div>
+
+        {/* 3. Donut Chart: Distribusi Kategori (New) */}
+        <div className="card">
+          <div style={{ marginBottom: '1rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>3. Distribusi Kategori</h3>
+            <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Berdasarkan kategori referensi</p>
+          </div>
+          <div style={{ width: '100%', height: 260 }}>
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie data={notamCategoryData} cx="50%" cy="50%" innerRadius={40} outerRadius={80} dataKey="value" stroke="none" label>
+                  {notamCategoryData.map((entry, index) => <Cell key={`cell-${index}`} fill={['#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index % 4]} />)}
+                </Pie>
+                <Tooltip />
+                <Legend verticalAlign="bottom" iconType="circle" />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* 4. Vertical Bar Chart: Pengaju Terbanyak (New) */}
+        <div className="card">
+          <div style={{ marginBottom: '1rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>4. Aktivitas per Personil</h3>
+            <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Top 5 Pembuat NOTAM</p>
+          </div>
+          <div style={{ width: '100%', height: 260 }}>
+            <ResponsiveContainer>
+              <BarChart data={notamCreatorData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={30} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* 5. Line Chart: Statistik Penerbitan */}
+        <div className="card" style={{ gridColumn: '1 / -1' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.1rem' }}>5. Tren Penerbitan Harian</h3>
+              <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Total NOTAM dibuat (Bulan ini)</p>
+            </div>
+          </div>
+          <div style={{ width: '100%', height: 260 }}>
+            <ResponsiveContainer>
+              <LineChart data={chartData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Line type="monotone" dataKey="notams" name="Total" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* 6. Area Chart: Perbandingan Aktif vs Selesai (New) */}
+        <div className="card" style={{ gridColumn: '1 / -1' }}>
+          <div style={{ marginBottom: '1rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>6. Komparasi Dibuat vs Selesai Harian</h3>
+            <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Bulan ini</p>
+          </div>
+          <div style={{ width: '100%', height: 260 }}>
+            <ResponsiveContainer>
+              <AreaChart data={notamTrendData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+                <defs>
+                  <linearGradient id="colorDibuat" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorSelesai" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Legend />
+                <Area type="monotone" dataKey="Dibuat" stroke="#3b82f6" fillOpacity={1} fill="url(#colorDibuat)" />
+                <Area type="monotone" dataKey="Selesai" stroke="#10b981" fillOpacity={1} fill="url(#colorSelesai)" />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
-
-      {/* Activity + Table Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2.5fr', gap: '1.5rem' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          {/* Upcoming Events Widget */}
-          <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Calendar size={18} color="var(--primary)" /> Agenda Terdekat
-              </h3>
-              <button 
-                onClick={() => setMainTab('calendar')} 
-                style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
-              >
-                Lihat Semua
-              </button>
-            </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {events
-                .filter(ev => {
-                  const evDate = new Date(ev.date);
-                  const today = new Date();
-                  today.setHours(0,0,0,0);
-                  return evDate >= today;
-                })
-                .sort((a, b) => new Date(a.date) - new Date(b.date))
-                .slice(0, 3)
-                .map(ev => (
-                  <div key={ev.id} style={{ 
-                    padding: '0.75rem', 
-                    background: '#f8fafc', 
-                    borderRadius: '8px', 
-                    borderLeft: `4px solid ${ev.category === 'Meeting' ? '#8b5cf6' : ev.category === 'Operation' ? '#f59e0b' : '#3b82f6'}`,
-                    cursor: 'pointer'
-                  }}
-                  onClick={() => setMainTab('calendar')}>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#0f172a', marginBottom: '0.25rem' }}>{ev.title}</div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: '#64748b' }}>
-                      <span>{new Date(ev.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
-                      <span>{ev.isAllDay ? 'All Day' : ev.startTime}</span>
-                    </div>
-                  </div>
-              ))}
-              {events.filter(ev => new Date(ev.date) >= new Date(new Date().setHours(0,0,0,0))).length === 0 && (
-                <div style={{ padding: '1rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem', background: '#f8fafc', borderRadius: '8px' }}>
-                  Tidak ada agenda terdekat
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Recent Activity */}
-          <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '400px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-              <Activity size={18} color="var(--primary)" />
-              <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Aktivitas Terbaru</h3>
-            </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0', flex: 1, overflowY: 'auto', paddingRight: '4px' }}>
-            {recentActivity.map((notam, idx) => {
-              const formData = notam.formData || {};
-              const jenisNotam = formData.jenisNotam || notam.jenis || '';
-              const lokasi = formData.lokasi || notam.lokasi || '';
-              const isNew = jenisNotam === 'NOTAM New';
-              const isReplace = jenisNotam === 'NOTAM Replace';
-              const dotColor = isNew ? '#3b82f6' : isReplace ? '#f59e0b' : '#ef4444';
+        </>
+      ) : (
+        <>
+          {/* Pre/Post-Shift Content */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1.25rem', marginBottom: '2rem' }}>
+            {shiftStatCards.map((card) => {
+              const Icon = card.icon;
               return (
-                <div
-                  key={notam.id}
-                  onClick={() => setSelectedNotam(notam)}
-                  style={{
-                    display: 'flex',
-                    gap: '12px',
-                    padding: '12px 0',
-                    borderBottom: idx < recentActivity.length - 1 ? '1px solid #f1f5f9' : 'none',
-                    cursor: 'pointer',
-                    transition: 'background 0.15s',
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                >
-                  {/* Timeline dot */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '4px' }}>
-                    <div style={{
-                      width: '10px', height: '10px',
-                      borderRadius: '50%',
-                      backgroundColor: dotColor,
-                      flexShrink: 0,
-                    }} />
-                    {idx < recentActivity.length - 1 && (
-                      <div style={{ width: '2px', flex: 1, backgroundColor: '#e2e8f0', marginTop: '4px' }} />
-                    )}
+                <div key={card.label} className="metric-card" style={{ cursor: 'default' }}>
+                  <div className="metric-icon-wrapper" style={{ backgroundColor: card.iconBg, color: card.iconColor }}>
+                    <Icon size={24} strokeWidth={2.5} />
                   </div>
-                  {/* Content */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '8px' }}>
-                      <span style={{ fontWeight: 600, fontSize: '0.85rem', color: '#0f172a' }}>{notam.formNo}</span>
-                      <span className={`badge ${isNew ? 'badge-blue' : isReplace ? 'badge-yellow' : 'badge-red'}`} style={{ fontSize: '0.65rem', padding: '2px 6px', flexShrink: 0 }}>
-                        {jenisNotam.replace('NOTAM ', '')}
-                      </span>
+                  <div className="metric-value">{card.value}</div>
+                  <div className="metric-label">{card.label}</div>
+                  {card.subtitle && (
+                    <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.25rem', fontWeight: 500 }}>
+                      {card.subtitle}
                     </div>
-                    {formData.targetFormNo && (
-                      <div style={{ fontSize: '0.7rem', color: isReplace ? '#d97706' : '#dc2626', marginTop: '2px', fontWeight: 500 }}>
-                        👉 {isReplace ? 'Replacing' : 'Canceling'}: {formData.targetFormNo}
-                      </div>
-                    )}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-                      <MapPin size={11} color="#94a3b8" />
-                      <span style={{ fontSize: '0.78rem', color: '#64748b' }}>{lokasi}</span>
-                    </div>
-                    <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px', display: 'block' }}>{timeAgo(notam.createdAt)}</span>
-                  </div>
+                  )}
                 </div>
               );
             })}
           </div>
-        </div>
-        </div>
 
-        {/* Table */}
-        <div className="card" style={{ overflow: 'visible', display: 'flex', flexDirection: 'column', height: '600px', paddingBottom: '0.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
-            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>
-              Daftar NOTAM <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'normal', marginLeft: '8px' }}>({filteredNotams.length} dokumen)</span>
-            </h3>
+          {/* 6 SHIFT Charts Row */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
             
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <select 
-                value={statusFilter} 
-                onChange={(e) => setStatusFilter(e.target.value)}
-                style={{ padding: '0.4rem 0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none' }}
-              >
-                <option value="all">Semua Status</option>
-                <option value="active">Aktif (Terbit)</option>
-                <option value="incoming">Incoming</option>
-                <option value="past">Sudah Lewat</option>
-              </select>
-              
-              <select 
-                value={jenisFilter} 
-                onChange={(e) => setJenisFilter(e.target.value)}
-                style={{ padding: '0.4rem 0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none' }}
-              >
-                <option value="all">Semua Jenis</option>
-                <option value="NOTAM New">NOTAM New</option>
-                <option value="NOTAM Replace">NOTAM Replace</option>
-                <option value="NOTAM Cancel">NOTAM Cancel</option>
-                <option value="Assessment Only">Assessment Only</option>
-              </select>
+            {/* 1. Bar Chart: Komparasi Pre vs Post per Shift (New) */}
+            <div className="card">
+              <div style={{ marginBottom: '1rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>1. Komparasi Pre vs Post per Shift</h3>
+                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Total form</p>
+              </div>
+              <div style={{ width: '100%', height: 260 }}>
+                <ResponsiveContainer>
+                  <BarChart data={shiftMetrics.shiftCompareData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="name" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="pre" name="Pre-Shift" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="post" name="Post-Shift" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
+
+            {/* 2. Pie Chart: Distribusi Shift */}
+            <div className="card">
+              <div style={{ marginBottom: '1rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>2. Distribusi Shift Keseluruhan</h3>
+                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Bulan ini</p>
+              </div>
+              <div style={{ width: '100%', height: 260 }}>
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie data={shiftMetrics.shiftPieData} cx="50%" cy="45%" innerRadius={55} outerRadius={85} paddingAngle={6} dataKey="value" stroke="none">
+                      {shiftMetrics.shiftPieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Legend verticalAlign="bottom" iconType="circle" />
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* 3. Donut Chart: Rasio Catatan/Remarks (New) */}
+            <div className="card">
+              <div style={{ marginBottom: '1rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>3. Rasio Keterangan Tambahan</h3>
+                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Persentase form yang memiliki anomali/catatan</p>
+              </div>
+              <div style={{ width: '100%', height: 260 }}>
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie data={shiftMetrics.remarksPieData} cx="50%" cy="50%" innerRadius={40} outerRadius={80} dataKey="value" stroke="none" label>
+                      {shiftMetrics.remarksPieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                    </Pie>
+                    <Tooltip />
+                    <Legend verticalAlign="bottom" iconType="circle" />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* 4. Vertical Bar Chart: Aktivitas per Supervisor (New) */}
+            <div className="card">
+              <div style={{ marginBottom: '1rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>4. Aktivitas per Personil</h3>
+                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Top Supervisor pembuat laporan</p>
+              </div>
+              <div style={{ width: '100%', height: 260 }}>
+                <ResponsiveContainer>
+                  <BarChart data={shiftMetrics.topSupervisors} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={30} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* 5. Line Chart: Aktivitas Harian */}
+            <div className="card" style={{ gridColumn: '1 / -1' }}>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>5. Aktivitas Harian</h3>
+                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Bulan ini</p>
+              </div>
+              <div style={{ width: '100%', height: 260 }}>
+                <ResponsiveContainer>
+                  <LineChart data={shiftMetrics.dailyData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                    <XAxis dataKey="name" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="pre" name="Pre-Shift" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="post" name="Post-Shift" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* 6. Area Chart: Kepatuhan Pengumpulan Mingguan (New) */}
+            <div className="card" style={{ gridColumn: '1 / -1' }}>
+              <div style={{ marginBottom: '1rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>6. Tren Pengumpulan Mingguan</h3>
+                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Volume laporan diselesaikan per minggu</p>
+              </div>
+              <div style={{ width: '100%', height: 260 }}>
+                <ResponsiveContainer>
+                  <AreaChart data={shiftMetrics.weeklyTrendData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="colorWeekly" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="name" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Area type="monotone" dataKey="value" name="Total Form" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorWeekly)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      </>)} {/* end mainTab === 'overview' */}
+
+      {/* ── NOTAM TAB CONTENT ─────────────────────────── */}
+      {mainTab === 'notam' && (
+        <div className="card" style={{ borderRadius: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>
+              Daftar NOTAM <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'normal', marginLeft: 8 }}>({filteredNotams.length} dokumen)</span>
+            </h3>
+            <Link to="/admin/create-notam" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', padding: '0.45rem 1rem' }}>
+              <Plus size={15} /> Buat NOTAM Baru
+            </Link>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', width: '320px' }}>
+            <CustomSelect
+              value={statusFilter}
+              onChange={setStatusFilter}
+              placeholder="Semua Status"
+              options={[
+                { value: 'all', label: 'Semua Status' },
+                { value: 'active', label: 'Aktif (Terbit)' },
+                { value: 'incoming', label: 'Incoming' },
+                { value: 'past', label: 'Sudah Lewat' }
+              ]}
+            />
+            
+            <CustomSelect
+              value={jenisFilter}
+              onChange={setJenisFilter}
+              placeholder="Semua Jenis"
+              options={[
+                { value: 'all', label: 'Semua Jenis' },
+                { value: 'NOTAM New', label: 'NOTAM New' },
+                { value: 'NOTAM Replace', label: 'NOTAM Replace' },
+                { value: 'NOTAM Cancel', label: 'NOTAM Cancel' },
+                { value: 'Assessment Only', label: 'Assessment Only' }
+              ]}
+            />
           </div>
 
           {filteredNotams.length === 0 ? (
@@ -628,7 +806,7 @@ export default function AdminDashboard() {
               <p>Belum ada NOTAM pada kategori ini.</p>
             </div>
           ) : (
-            <div style={{ overflowX: 'auto', overflowY: 'auto', flex: 1 }}>
+            <div style={{ overflowX: 'auto' }}>
               <table className="data-table">
                 <thead>
                   <tr>
@@ -701,13 +879,11 @@ export default function AdminDashboard() {
             </div>
           )}
         </div>
-      </div>
-
-      </>)} {/* end mainTab === 'notam' */}
+      )}
 
       {/* ── BRIEFING TAB ─────────────────────────── */}
       {mainTab === 'briefing' && (
-        <div className="card">
+        <div className="card" style={{ borderRadius: '8px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
             <h3 style={{ margin: 0, fontSize: '1.1rem' }}>
               Daftar Pre-Shift Briefing
@@ -752,21 +928,23 @@ export default function AdminDashboard() {
                         <div style={{ fontSize: '0.85rem' }}>{b.outgoingManager?.nama}</div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{b.outgoingManager?.initial}</div>
                       </td>
-                      <td style={{ display: 'flex', gap: 6 }}>
-                        <button
-                          className="btn btn-secondary"
-                          style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
-                          onClick={(e) => { e.stopPropagation(); setSelectedBriefing(b); }}
-                        >
-                          Lihat PDF
-                        </button>
-                        <button
-                          className="btn"
-                          style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer' }}
-                          onClick={(e) => handleDeleteBriefing(b.id, e)}
-                        >
-                          <Trash2 size={13} />
-                        </button>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button
+                            className="btn btn-secondary"
+                            style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
+                            onClick={(e) => { e.stopPropagation(); setSelectedBriefing(b); }}
+                          >
+                            Lihat PDF
+                          </button>
+                          <button
+                            className="btn"
+                            style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                            onClick={(e) => handleDeleteBriefing(b.id, e)}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -779,7 +957,7 @@ export default function AdminDashboard() {
 
       {/* ── POST-SHIFT TAB ─────────────────────────── */}
       {mainTab === 'postshift' && (
-        <div className="card">
+        <div className="card" style={{ borderRadius: '8px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
             <h3 style={{ margin: 0, fontSize: '1.1rem' }}>
               Daftar Post-Shift Review
@@ -824,21 +1002,23 @@ export default function AdminDashboard() {
                         <div style={{ fontSize: '0.85rem' }}>{p.outgoingManager?.nama}</div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{p.outgoingManager?.initial}</div>
                       </td>
-                      <td style={{ display: 'flex', gap: 6 }}>
-                        <button
-                          className="btn btn-secondary"
-                          style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
-                          onClick={(e) => { e.stopPropagation(); setSelectedPostShift(p); }}
-                        >
-                          Lihat PDF
-                        </button>
-                        <button
-                          className="btn"
-                          style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer' }}
-                          onClick={(e) => handleDeletePostShift(p.id, e)}
-                        >
-                          <Trash2 size={13} />
-                        </button>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button
+                            className="btn btn-secondary"
+                            style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
+                            onClick={(e) => { e.stopPropagation(); setSelectedPostShift(p); }}
+                          >
+                            Lihat PDF
+                          </button>
+                          <button
+                            className="btn"
+                            style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                            onClick={(e) => handleDeletePostShift(p.id, e)}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

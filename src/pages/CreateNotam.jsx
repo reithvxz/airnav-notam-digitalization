@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNotams } from '../context/NotamContext';
-import { FileText, Map, Download, CheckCircle } from 'lucide-react';
+import { FileText, Map, Download, CheckCircle, ArrowLeft } from 'lucide-react';
 import generatePdf from '../utils/pdfGenerator';
 import PdfTemplate from '../components/PdfTemplate';
 import { v4 as uuidv4 } from 'uuid';
@@ -374,10 +374,27 @@ export default function CreateNotam() {
 
   return (
     <div>
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Buat NOTAM</h1>
-          <p className="page-subtitle">Isi form untuk menerbitkan NOTAM baru, replace, atau cancel.</p>
+      {/* ── TOP BAR ────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          <button
+            onClick={() => navigate(-1)}
+            type="button"
+            title="Kembali"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44,
+              background: 'white', border: '1px solid #e2e8f0', borderRadius: '50%',
+              cursor: 'pointer', color: '#475569', boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+            onMouseLeave={e => e.currentTarget.style.background = 'white'}
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <div>
+            <h1 className="page-title" style={{ margin: 0, fontSize: '1.5rem' }}>Buat NOTAM</h1>
+            <p className="page-subtitle" style={{ margin: 0, marginTop: '0.25rem' }}>Isi form untuk menerbitkan NOTAM baru, replace, atau cancel.</p>
+          </div>
         </div>
       </div>
 

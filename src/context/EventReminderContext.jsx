@@ -127,7 +127,7 @@ export function EventReminderProvider({ children }) {
   };
 
   return (
-    <EventReminderContext.Provider value={{}}>
+    <EventReminderContext.Provider value={{ events }}>
       {children}
     </EventReminderContext.Provider>
   );

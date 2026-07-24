@@ -39,60 +39,48 @@ function AppRoutes() {
         {/* Admin Routes */}
         <Route 
           path="/admin/dashboard" 
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminDashboard />
-            </ProtectedRoute>
-          } 
+          element={<ProtectedRoute allowedRole="admin"><AdminDashboard defaultTab="overview" /></ProtectedRoute>} 
+        />
+        <Route 
+          path="/admin/notams" 
+          element={<ProtectedRoute allowedRole="admin"><AdminDashboard defaultTab="notam" /></ProtectedRoute>} 
+        />
+        <Route 
+          path="/admin/preshifts" 
+          element={<ProtectedRoute allowedRole="admin"><AdminDashboard defaultTab="briefing" /></ProtectedRoute>} 
+        />
+        <Route 
+          path="/admin/postshifts" 
+          element={<ProtectedRoute allowedRole="admin"><AdminDashboard defaultTab="postshift" /></ProtectedRoute>} 
+        />
+        <Route 
+          path="/admin/calendar" 
+          element={<ProtectedRoute allowedRole="admin"><AdminDashboard defaultTab="calendar" /></ProtectedRoute>} 
         />
         <Route 
           path="/admin/create-notam" 
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <CreateNotam />
-            </ProtectedRoute>
-          } 
+          element={<ProtectedRoute allowedRole="admin"><CreateNotam /></ProtectedRoute>} 
         />
         <Route 
           path="/admin/accounts" 
-          element={
-            <ProtectedRoute allowedRole="admin" requireSuperAdmin={true}>
-              <AccountManagement />
-            </ProtectedRoute>
-          } 
+          element={<ProtectedRoute allowedRole="admin" requireSuperAdmin={true}><AccountManagement /></ProtectedRoute>} 
         />
         <Route 
           path="/admin/settings/shift" 
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <ShiftSettings />
-            </ProtectedRoute>
-          } 
+          element={<ProtectedRoute allowedRole="admin"><ShiftSettings /></ProtectedRoute>} 
         />
         <Route 
           path="/admin/create-briefing" 
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <CreateBriefing />
-            </ProtectedRoute>
-          } 
+          element={<ProtectedRoute allowedRole="admin"><CreateBriefing /></ProtectedRoute>} 
         />
         <Route 
           path="/admin/create-postshift" 
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <CreatePostShift />
-            </ProtectedRoute>
-          } 
+          element={<ProtectedRoute allowedRole="admin"><CreatePostShift /></ProtectedRoute>} 
         />
         {/* Employee Routes */}
         <Route 
           path="/employee/dashboard" 
-          element={
-            <ProtectedRoute allowedRole="employee">
-              <EmployeeDashboard />
-            </ProtectedRoute>
-          } 
+          element={<ProtectedRoute allowedRole="employee"><EmployeeDashboard /></ProtectedRoute>} 
         />
       </Route>
     </Routes>
