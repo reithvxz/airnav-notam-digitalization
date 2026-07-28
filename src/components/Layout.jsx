@@ -7,7 +7,7 @@ import {
   LayoutDashboard, FileText, CheckSquare, 
   LogOut, User, Key, Users, Settings, 
   Bell, Activity, Calendar as CalendarIcon, Clock,
-  ChevronRight, ChevronLeft, Menu, ClipboardCheck, FileCheck
+  ChevronRight, ChevronLeft, Menu, ClipboardCheck, Briefcase
 } from 'lucide-react';
 
 export default function Layout() {
@@ -18,6 +18,7 @@ export default function Layout() {
   const { notams } = useNotams() || { notams: [] };
   
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [pwdData, setPwdData] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
   const [pwdError, setPwdError] = useState('');
   const [pwdSuccess, setPwdSuccess] = useState('');
@@ -157,6 +158,9 @@ export default function Layout() {
               <Link to="/admin/postshifts" className={`sidebar-link ${location.pathname === '/admin/postshifts' || location.pathname === '/admin/create-postshift' ? 'active' : ''}`} title={!isSidebarOpen ? 'Post-Shift' : ''} style={{ justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '0.6rem 1rem' : '0.6rem 0' }}>
                 <ClipboardCheck size={18} /> {isSidebarOpen && 'Post-Shift'}
               </Link>
+              <Link to="/admin/create-preduty" className={`sidebar-link ${location.pathname === '/admin/create-preduty' ? 'active' : ''}`} title={!isSidebarOpen ? 'Preduty' : ''} style={{ justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '0.6rem 1rem' : '0.6rem 0' }}>
+                <Briefcase size={18} /> {isSidebarOpen && 'Preduty'}
+              </Link>
               <Link to="/admin/calendar" className={`sidebar-link ${location.pathname === '/admin/calendar' ? 'active' : ''}`} title={!isSidebarOpen ? 'Calendar' : ''} style={{ justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '0.6rem 1rem' : '0.6rem 0' }}>
                 <CalendarIcon size={18} /> {isSidebarOpen && 'Calendar'}
               </Link>
@@ -203,8 +207,8 @@ export default function Layout() {
       {/* 2. CENTER CONTENT */}
       <main className="main-content" style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ paddingBottom: '1.25rem', borderBottom: '1px solid #e2e8f0', marginBottom: '1.5rem', textAlign: 'left' }}>
-          <h1 style={{ margin: 0, fontSize: '1.75rem', color: '#1e3a8a', fontWeight: 800, letterSpacing: '-0.5px' }}>AirNav Indonesia</h1>
-          <p style={{ margin: '0.25rem 0 0', color: '#64748b', fontSize: '0.9rem', fontWeight: 500 }}>Sistem Digitalisasi NOTAM & Manajemen Shift Cabang Surabaya</p>
+          <h1 style={{ margin: 0, fontSize: '1.75rem', color: '#1e3a8a', fontWeight: 800, letterSpacing: '-0.5px' }}>SIMO AirNav Cabang Surabaya</h1>
+          <p style={{ margin: '0.25rem 0 0', color: '#64748b', fontSize: '0.9rem', fontWeight: 500 }}>Sistem Informasi Manajemen Operasi</p>
         </div>
         <div style={{ flex: 1, overflow: 'visible' }}>
           <Outlet />
@@ -328,7 +332,7 @@ export default function Layout() {
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>Password Lama</label>
                 <input 
-                  type="password" 
+                  type={showPassword ? "text" : "password"} 
                   value={pwdData.oldPassword}
                   onChange={e => setPwdData({...pwdData, oldPassword: e.target.value})}
                   required
@@ -338,22 +342,33 @@ export default function Layout() {
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>Password Baru</label>
                 <input 
-                  type="password" 
+                  type={showPassword ? "text" : "password"} 
                   value={pwdData.newPassword}
                   onChange={e => setPwdData({...pwdData, newPassword: e.target.value})}
                   required
                   style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)' }}
                 />
               </div>
-              <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ marginBottom: '0.75rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>Konfirmasi Password Baru</label>
                 <input 
-                  type="password" 
+                  type={showPassword ? "text" : "password"} 
                   value={pwdData.confirmPassword}
                   onChange={e => setPwdData({...pwdData, confirmPassword: e.target.value})}
                   required
                   style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)' }}
                 />
+              </div>
+              
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <input 
+                  type="checkbox" 
+                  id="show-layout-pwd" 
+                  checked={showPassword} 
+                  onChange={() => setShowPassword(!showPassword)}
+                  style={{ cursor: 'pointer', marginRight: '8px' }}
+                />
+                <label htmlFor="show-layout-pwd" style={{ fontSize: '0.85rem', color: '#64748b', cursor: 'pointer', userSelect: 'none' }}>Tampilkan password</label>
               </div>
               
               <div style={{ display: 'flex', gap: '1rem' }}>

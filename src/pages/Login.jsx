@@ -6,6 +6,7 @@ import { FileText, User, Lock, ArrowRight } from 'lucide-react';
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -75,8 +76,8 @@ export default function Login() {
           />
         </div>
         
-        <h1 className="login-title">AirNav Operations Portal</h1>
-        <p className="login-subtitle">Masuk untuk mengelola dokumen NOTAM digital</p>
+        <h1 className="login-title">SIMO AirNav Cabang Surabaya</h1>
+        <p className="login-subtitle">Sistem Informasi Manajemen Operasi</p>
 
         {error && (
           <div style={{
@@ -106,16 +107,27 @@ export default function Login() {
             />
           </div>
 
-          <div className="login-input-group">
+          <div className="login-input-group" style={{ marginBottom: '0.75rem' }}>
             <Lock size={18} className="login-input-icon" />
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               className="login-input"
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1.5rem', paddingLeft: '0.5rem' }}>
+            <input 
+              type="checkbox" 
+              id="show-pwd" 
+              checked={showPassword} 
+              onChange={() => setShowPassword(!showPassword)}
+              style={{ cursor: 'pointer', marginRight: '8px' }}
+            />
+            <label htmlFor="show-pwd" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', cursor: 'pointer', userSelect: 'none' }}>Tampilkan password</label>
           </div>
 
           <button type="submit" className="login-btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
@@ -162,7 +174,7 @@ export default function Login() {
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>Password Lama (admin)</label>
                 <input 
-                  type="password" 
+                  type={showPassword ? "text" : "password"} 
                   value={pwdData.oldPassword}
                   onChange={e => setPwdData({...pwdData, oldPassword: e.target.value})}
                   required
@@ -172,22 +184,33 @@ export default function Login() {
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>Password Baru</label>
                 <input 
-                  type="password" 
+                  type={showPassword ? "text" : "password"} 
                   value={pwdData.newPassword}
                   onChange={e => setPwdData({...pwdData, newPassword: e.target.value})}
                   required
                   style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)' }}
                 />
               </div>
-              <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ marginBottom: '0.75rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>Konfirmasi Password Baru</label>
                 <input 
-                  type="password" 
+                  type={showPassword ? "text" : "password"} 
                   value={pwdData.confirmPassword}
                   onChange={e => setPwdData({...pwdData, confirmPassword: e.target.value})}
                   required
                   style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)' }}
                 />
+              </div>
+              
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <input 
+                  type="checkbox" 
+                  id="show-modal-pwd" 
+                  checked={showPassword} 
+                  onChange={() => setShowPassword(!showPassword)}
+                  style={{ cursor: 'pointer', marginRight: '8px' }}
+                />
+                <label htmlFor="show-modal-pwd" style={{ fontSize: '0.85rem', color: '#64748b', cursor: 'pointer', userSelect: 'none' }}>Tampilkan password</label>
               </div>
               
               <div style={{ display: 'flex', gap: '1rem' }}>

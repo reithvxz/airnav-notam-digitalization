@@ -793,3 +793,37 @@ a {
     padding: 1rem;
   }
 }
+
+/* Custom Month Picker */
+.custom-month-picker {
+  appearance: none;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.custom-month-picker:hover {
+  border-color: #94a3b8;
+  background-color: #f8fafc;
+}
+.custom-month-picker:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  background-color: #ffffff;
+}
+.custom-month-picker::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+.custom-month-picker::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}

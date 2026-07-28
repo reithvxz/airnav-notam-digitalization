@@ -217,3 +217,75 @@ export function CustomSelect({ value, onChange, options, placeholder, label }) {
     </div>
   );
 }
+
+// ── Custom Month Picker ─────────────────────────────────────────────────────────────
+export function CustomMonthPicker({ value, onChange }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef();
+  useClickOutside(ref, () => setIsOpen(false));
+
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+  
+  // value is expected in "YYYY-MM" format (e.g. "2026-07")
+  const currentYear = value ? parseInt(value.split('-')[0], 10) : new Date().getFullYear();
+  const currentMonth = value ? parseInt(value.split('-')[1], 10) - 1 : new Date().getMonth();
+
+  const [viewYear, setViewYear] = useState(currentYear);
+
+  const handleSelect = (monthIdx) => {
+    const yyyy = viewYear;
+    const mm = String(monthIdx + 1).padStart(2, '0');
+    onChange(`${yyyy}-${mm}`);
+    setIsOpen(false);
+  };
+
+  return (
+    <div ref={ref} style={{ position: 'relative', zIndex: isOpen ? 50 : 1 }}>
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#ffffff', border: `1px solid ${isOpen ? '#2563eb' : '#cbd5e1'}`, borderRadius: 8, padding: '0.55rem 1rem', cursor: 'pointer', transition: 'all 0.2s', width: '180px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
+      >
+        <Calendar size={16} color={isOpen ? '#2563eb' : '#64748b'} />
+        <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.95rem', flex: 1 }}>
+          {monthNames[currentMonth]} {currentYear}
+        </span>
+        <ChevronDown size={16} color="#94a3b8" />
+      </div>
+
+      {isOpen && (
+        <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 8, background: 'white', borderRadius: 12, boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0', padding: '1.2rem', zIndex: 50, width: 240 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <button type="button" onClick={(e) => { e.stopPropagation(); setViewYear(y => y - 1); }} style={{ background: '#f1f5f9', border: 'none', borderRadius: 6, padding: 6, cursor: 'pointer', display: 'flex' }}><ChevronLeft size={16} /></button>
+            <span style={{ fontWeight: 700, fontSize: '1.05rem', color: '#1e293b' }}>{viewYear}</span>
+            <button type="button" onClick={(e) => { e.stopPropagation(); setViewYear(y => y + 1); }} style={{ background: '#f1f5f9', border: 'none', borderRadius: 6, padding: 6, cursor: 'pointer', display: 'flex' }}><ChevronRight size={16} /></button>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            {monthNames.map((m, i) => {
+              const isSelected = viewYear === currentYear && i === currentMonth;
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => handleSelect(i)}
+                  style={{
+                    background: isSelected ? '#2563eb' : 'transparent',
+                    color: isSelected ? 'white' : '#475569',
+                    border: 'none', borderRadius: 8, padding: '10px 0',
+                    fontSize: '0.9rem', fontWeight: isSelected ? 700 : 500,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseOver={(e) => !isSelected && (e.target.style.background = '#f1f5f9')}
+                  onMouseOut={(e) => !isSelected && (e.target.style.background = 'transparent')}
+                >
+                  {m}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

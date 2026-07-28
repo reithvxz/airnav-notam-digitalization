@@ -175,6 +175,69 @@ const PostShift = sequelize.define('PostShift', {
   }
 });
 
+// Define Preduty Model
+const Preduty = sequelize.define('Preduty', {
+  id: {
+    type: DataTypes.STRING,
+    primaryKey: true
+  },
+  date: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  time: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  managerOnDuty: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  shift: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  personelImage: {
+    type: DataTypes.TEXT('long'),
+    allowNull: true
+  },
+  fasilitasData: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  notamText: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  trafficImage: {
+    type: DataTypes.TEXT('long'),
+    allowNull: true
+  },
+  weatherImage: {
+    type: DataTypes.TEXT('long'),
+    allowNull: true
+  },
+  othersData: {
+    type: DataTypes.TEXT('long'),
+    allowNull: true
+  },
+  reminderText: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  instructionText: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  createdBy: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: User,
+      key: 'id'
+    }
+  }
+});
+
 // Define Event Model
 const Event = sequelize.define('Event', {
   id: {
@@ -229,10 +292,13 @@ Briefing.belongsTo(User, { foreignKey: 'createdBy' });
 User.hasMany(PostShift, { foreignKey: 'createdBy' });
 PostShift.belongsTo(User, { foreignKey: 'createdBy' });
 
+User.hasMany(Preduty, { foreignKey: 'createdBy' });
+Preduty.belongsTo(User, { foreignKey: 'createdBy' });
+
 // Sync database function
 const initDb = async () => {
-  await sequelize.sync(); // Creates tables if they don't exist
+  await sequelize.sync({ alter: true }); // Use alter to add tables/columns automatically
   console.log("Database synchronized");
 };
 
-module.exports = { sequelize, User, Notam, Briefing, PostShift, Event, initDb };
+module.exports = { sequelize, User, Notam, Briefing, PostShift, Event, Preduty, initDb };

@@ -3,11 +3,12 @@ const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { initDb, User, Notam, Briefing, PostShift, Event } = require('./database');
+const { initDb, User, Notam, Briefing, PostShift, Event, Preduty } = require('./database');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // Serve static files from signatures folder
 app.use('/signatures', express.static(path.join(__dirname, 'signatures')));
 
@@ -344,6 +345,81 @@ app.delete('/api/briefings/:id', async (req, res) => {
   }
 });
 
+// ==========================================
+// API: PREDUTY
+// ==========================================
+
+app.get('/api/preduties', async (req, res) => {
+  try {
+    const preduties = await Preduty.findAll({ order: [['createdAt', 'DESC']] });
+    const parsed = preduties.map(p => {
+      const data = p.toJSON();
+      if (data.fasilitasData) data.fasilitasData = JSON.parse(data.fasilitasData);
+      if (data.othersData) data.othersData = JSON.parse(data.othersData);
+      return data;
+    });
+    res.json(parsed);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/preduties/:id', async (req, res) => {
+  try {
+    const preduty = await Preduty.findByPk(req.params.id);
+    if (!preduty) return res.status(404).json({ error: 'Not found' });
+    const data = preduty.toJSON();
+    if (data.fasilitasData) data.fasilitasData = JSON.parse(data.fasilitasData);
+    if (data.othersData) data.othersData = JSON.parse(data.othersData);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/preduties', async (req, res) => {
+  try {
+    const { id, date, time, managerOnDuty, shift, personelImage, fasilitasData, notamText, trafficImage, weatherImage, othersData, reminderText, instructionText, createdBy } = req.body;
+    const newPreduty = await Preduty.create({
+      id,
+      date,
+      time,
+      managerOnDuty,
+      shift,
+      personelImage,
+      fasilitasData: fasilitasData ? JSON.stringify(fasilitasData) : null,
+      notamText,
+      trafficImage,
+      weatherImage,
+      othersData: othersData ? JSON.stringify(othersData) : null,
+      reminderText,
+      instructionText,
+      createdBy
+    });
+    const responseData = newPreduty.toJSON();
+    if (responseData.fasilitasData) responseData.fasilitasData = JSON.parse(responseData.fasilitasData);
+    if (responseData.othersData) responseData.othersData = JSON.parse(responseData.othersData);
+    res.json({ success: true, preduty: responseData });
+  } catch (err) {
+    console.error('Error creating preduty:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/preduties/:id', async (req, res) => {
+  try {
+    const preduty = await Preduty.findByPk(req.params.id);
+    if (!preduty) return res.status(404).json({ error: 'Not found' });
+    await preduty.destroy();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// API: POSTSHIFTS
+// ==========================================
 // API: Get All PostShifts
 app.get('/api/postshifts', async (req, res) => {
   try {

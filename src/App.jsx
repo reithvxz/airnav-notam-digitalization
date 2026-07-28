@@ -10,6 +10,7 @@ import CreateNotam from './pages/CreateNotam';
 import AccountManagement from './pages/AccountManagement';
 import CreateBriefing from './pages/CreateBriefing';
 import CreatePostShift from './pages/CreatePostShift';
+import CreatePreduty from './pages/CreatePreduty';
 import ShiftSettings from './pages/ShiftSettings';
 
 // Protected Route Component
@@ -76,6 +77,10 @@ function AppRoutes() {
         <Route 
           path="/admin/create-postshift" 
           element={<ProtectedRoute allowedRole="admin"><CreatePostShift /></ProtectedRoute>} 
+        />
+        <Route 
+          path="/admin/create-preduty" 
+          element={<ProtectedRoute allowedRole="admin"><CreatePreduty /></ProtectedRoute>} 
         />
         {/* Employee Routes */}
         <Route 

@@ -8,6 +8,9 @@ import PdfViewerModal from '../components/PdfViewerModal';
 import BriefingViewerModal from '../components/BriefingViewerModal';
 import PostShiftViewerModal from '../components/PostShiftViewerModal';
 import CalendarView from '../components/CalendarView';
+import NotamAnalytics from '../components/dashboard/NotamAnalytics';
+import ShiftAnalytics from '../components/dashboard/ShiftAnalytics';
+import PredutyAnalytics from '../components/dashboard/PredutyAnalytics';
 
 const PIE_COLORS = ['#1e3a8a', '#2563eb', '#60a5fa', '#bfdbfe'];
 
@@ -45,6 +48,7 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
 
   const [briefings, setBriefings] = useState([]);
   const [postshifts, setPostshifts] = useState([]);
+  const [preduties, setPreduties] = useState([]);
   const [events, setEvents] = useState([]);
   const [selectedBriefing, setSelectedBriefing] = useState(null);
   const [selectedPostShift, setSelectedPostShift] = useState(null);
@@ -61,6 +65,12 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
         .then(r => r.json())
         .then(data => setPostshifts(Array.isArray(data) ? data : []))
         .catch(() => setPostshifts([]));
+    }
+    if (mainTab === 'overview') {
+      fetch('http://localhost:3000/api/preduties')
+        .then(r => r.json())
+        .then(data => setPreduties(Array.isArray(data) ? data : []))
+        .catch(() => setPreduties([]));
     }
     
     // Always fetch events for the Upcoming Events widget in notam tab, or for calendar tab
@@ -423,340 +433,21 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
           >
             Pre-Shift & Post-Shift
           </button>
+          <button 
+            onClick={() => setOverviewMode('preduty')}
+            style={{ padding: '0.6rem 2rem', borderRadius: '6px', border: 'none', background: overviewMode === 'preduty' ? 'white' : 'transparent', color: overviewMode === 'preduty' ? '#1e3a8a' : '#64748b', fontWeight: overviewMode === 'preduty' ? 700 : 500, cursor: 'pointer', boxShadow: overviewMode === 'preduty' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', transition: 'all 0.2s', fontSize: '0.95rem' }}
+          >
+            Preduty
+          </button>
         </div>
       </div>
 
       {overviewMode === 'notam' ? (
-        <>
-
-      {/* Stat Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1.25rem', marginBottom: '2rem' }}>
-        {statCards.map((card) => {
-          const Icon = card.icon;
-          const isSelected = card.filterKey && statusFilter === card.filterKey;
-          return (
-            <div
-              key={card.label}
-              className="metric-card"
-              onClick={() => {
-                const filter = card.filterKey || 'all';
-                navigate('/admin/notams', { state: { statusFilter: filter } });
-              }}
-              style={{
-                cursor: 'pointer',
-                borderColor: isSelected ? card.borderColor : 'rgba(255,255,255,0.5)',
-                boxShadow: isSelected ? `0 0 0 2px ${card.borderColor}33, 0 10px 25px rgba(0,0,0,0.05)` : undefined
-              }}
-            >
-              <div className="metric-icon-wrapper" style={{ backgroundColor: card.iconBg, color: card.iconColor }}>
-                <Icon size={24} strokeWidth={2.5} />
-              </div>
-              <div className="metric-value">{card.value}</div>
-              <div className="metric-label">{card.label}</div>
-              {card.subtitle && (
-                <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.25rem', fontWeight: 500 }}>
-                  {card.subtitle}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* 6 NOTAM Charts Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
-        
-        {/* 1. Bar Chart: Distribusi Status */}
-        <div className="card">
-          <div style={{ marginBottom: '1rem' }}>
-            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>1. Distribusi Status NOTAM</h3>
-            <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Semua NOTAM</p>
-          </div>
-          <div style={{ width: '100%', height: 260 }}>
-            {statusPieData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={statusPieData} layout="vertical" barSize={28} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
-                  <XAxis type="number" hide />
-                  <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} width={70} />
-                  <Tooltip cursor={{ fill: 'rgba(59,130,246,0.04)' }} />
-                  <Bar dataKey="value" radius={[0, 8, 8, 0]}>
-                    {statusPieData.map((entry, index) => {
-                      const colors = { 'Terbit': '#1e3a8a', 'Incoming': '#3b82f6', 'Selesai': '#93c5fd' };
-                      return <Cell key={`cell-${index}`} fill={colors[entry.name] || '#3b82f6'} />;
-                    })}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            ) : <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>Belum ada data</p>}
-          </div>
-        </div>
-
-        {/* 2. Pie Chart: Distribusi Jenis */}
-        <div className="card">
-          <div style={{ marginBottom: '1rem' }}>
-            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>2. Distribusi Jenis NOTAM</h3>
-            <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Semua NOTAM</p>
-          </div>
-          <div style={{ width: '100%', height: 260 }}>
-            {pieData.length > 0 ? (
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie data={pieData} cx="50%" cy="45%" innerRadius={55} outerRadius={85} paddingAngle={6} dataKey="value" stroke="none">
-                    {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}
-                  </Pie>
-                  <Legend verticalAlign="bottom" iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '13px', color: '#475569', fontWeight: 600 }} />
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>Belum ada data</p>}
-          </div>
-        </div>
-
-        {/* 3. Donut Chart: Distribusi Kategori (New) */}
-        <div className="card">
-          <div style={{ marginBottom: '1rem' }}>
-            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>3. Distribusi Kategori</h3>
-            <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Berdasarkan kategori referensi</p>
-          </div>
-          <div style={{ width: '100%', height: 260 }}>
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie data={notamCategoryData} cx="50%" cy="50%" innerRadius={40} outerRadius={80} dataKey="value" stroke="none" label>
-                  {notamCategoryData.map((entry, index) => <Cell key={`cell-${index}`} fill={['#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index % 4]} />)}
-                </Pie>
-                <Tooltip />
-                <Legend verticalAlign="bottom" iconType="circle" />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* 4. Vertical Bar Chart: Pengaju Terbanyak (New) */}
-        <div className="card">
-          <div style={{ marginBottom: '1rem' }}>
-            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>4. Aktivitas per Personil</h3>
-            <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Top 5 Pembuat NOTAM</p>
-          </div>
-          <div style={{ width: '100%', height: 260 }}>
-            <ResponsiveContainer>
-              <BarChart data={notamCreatorData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={30} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* 5. Line Chart: Statistik Penerbitan */}
-        <div className="card" style={{ gridColumn: '1 / -1' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <div>
-              <h3 style={{ margin: 0, fontSize: '1.1rem' }}>5. Tren Penerbitan Harian</h3>
-              <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Total NOTAM dibuat (Bulan ini)</p>
-            </div>
-          </div>
-          <div style={{ width: '100%', height: 260 }}>
-            <ResponsiveContainer>
-              <LineChart data={chartData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Line type="monotone" dataKey="notams" name="Total" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* 6. Area Chart: Perbandingan Aktif vs Selesai (New) */}
-        <div className="card" style={{ gridColumn: '1 / -1' }}>
-          <div style={{ marginBottom: '1rem' }}>
-            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>6. Komparasi Dibuat vs Selesai Harian</h3>
-            <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Bulan ini</p>
-          </div>
-          <div style={{ width: '100%', height: 260 }}>
-            <ResponsiveContainer>
-              <AreaChart data={notamTrendData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
-                <defs>
-                  <linearGradient id="colorDibuat" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorSelesai" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" />
-                <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Legend />
-                <Area type="monotone" dataKey="Dibuat" stroke="#3b82f6" fillOpacity={1} fill="url(#colorDibuat)" />
-                <Area type="monotone" dataKey="Selesai" stroke="#10b981" fillOpacity={1} fill="url(#colorSelesai)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-        </>
+        <NotamAnalytics notams={notams} />
+      ) : overviewMode === 'shift' ? (
+        <ShiftAnalytics briefings={briefings} postshifts={postshifts} />
       ) : (
-        <>
-          {/* Pre/Post-Shift Content */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1.25rem', marginBottom: '2rem' }}>
-            {shiftStatCards.map((card) => {
-              const Icon = card.icon;
-              return (
-                <div key={card.label} className="metric-card" style={{ cursor: 'default' }}>
-                  <div className="metric-icon-wrapper" style={{ backgroundColor: card.iconBg, color: card.iconColor }}>
-                    <Icon size={24} strokeWidth={2.5} />
-                  </div>
-                  <div className="metric-value">{card.value}</div>
-                  <div className="metric-label">{card.label}</div>
-                  {card.subtitle && (
-                    <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.25rem', fontWeight: 500 }}>
-                      {card.subtitle}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* 6 SHIFT Charts Row */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
-            
-            {/* 1. Bar Chart: Komparasi Pre vs Post per Shift (New) */}
-            <div className="card">
-              <div style={{ marginBottom: '1rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>1. Komparasi Pre vs Post per Shift</h3>
-                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Total form</p>
-              </div>
-              <div style={{ width: '100%', height: 260 }}>
-                <ResponsiveContainer>
-                  <BarChart data={shiftMetrics.shiftCompareData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="name" />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="pre" name="Pre-Shift" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="post" name="Post-Shift" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* 2. Pie Chart: Distribusi Shift */}
-            <div className="card">
-              <div style={{ marginBottom: '1rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>2. Distribusi Shift Keseluruhan</h3>
-                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Bulan ini</p>
-              </div>
-              <div style={{ width: '100%', height: 260 }}>
-                <ResponsiveContainer>
-                  <PieChart>
-                    <Pie data={shiftMetrics.shiftPieData} cx="50%" cy="45%" innerRadius={55} outerRadius={85} paddingAngle={6} dataKey="value" stroke="none">
-                      {shiftMetrics.shiftPieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Legend verticalAlign="bottom" iconType="circle" />
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* 3. Donut Chart: Rasio Catatan/Remarks (New) */}
-            <div className="card">
-              <div style={{ marginBottom: '1rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>3. Rasio Keterangan Tambahan</h3>
-                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Persentase form yang memiliki anomali/catatan</p>
-              </div>
-              <div style={{ width: '100%', height: 260 }}>
-                <ResponsiveContainer>
-                  <PieChart>
-                    <Pie data={shiftMetrics.remarksPieData} cx="50%" cy="50%" innerRadius={40} outerRadius={80} dataKey="value" stroke="none" label>
-                      {shiftMetrics.remarksPieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                    </Pie>
-                    <Tooltip />
-                    <Legend verticalAlign="bottom" iconType="circle" />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* 4. Vertical Bar Chart: Aktivitas per Supervisor (New) */}
-            <div className="card">
-              <div style={{ marginBottom: '1rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>4. Aktivitas per Personil</h3>
-                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Top Supervisor pembuat laporan</p>
-              </div>
-              <div style={{ width: '100%', height: 260 }}>
-                <ResponsiveContainer>
-                  <BarChart data={shiftMetrics.topSupervisors} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={30} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* 5. Line Chart: Aktivitas Harian */}
-            <div className="card" style={{ gridColumn: '1 / -1' }}>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>5. Aktivitas Harian</h3>
-                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Bulan ini</p>
-              </div>
-              <div style={{ width: '100%', height: 260 }}>
-                <ResponsiveContainer>
-                  <LineChart data={shiftMetrics.dailyData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                    <XAxis dataKey="name" />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="pre" name="Pre-Shift" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                    <Line type="monotone" dataKey="post" name="Post-Shift" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* 6. Area Chart: Kepatuhan Pengumpulan Mingguan (New) */}
-            <div className="card" style={{ gridColumn: '1 / -1' }}>
-              <div style={{ marginBottom: '1rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>6. Tren Pengumpulan Mingguan</h3>
-                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Volume laporan diselesaikan per minggu</p>
-              </div>
-              <div style={{ width: '100%', height: 260 }}>
-                <ResponsiveContainer>
-                  <AreaChart data={shiftMetrics.weeklyTrendData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
-                    <defs>
-                      <linearGradient id="colorWeekly" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="name" />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip />
-                    <Area type="monotone" dataKey="value" name="Total Form" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorWeekly)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-        </>
+        <PredutyAnalytics preduties={preduties} />
       )}
 
       </>)} {/* end mainTab === 'overview' */}
