@@ -176,7 +176,8 @@ a {
   grid-template-columns: 260px 1fr 300px;
   overflow: hidden;
   background: #f8fafc;
-  transition: grid-template-columns 0.3s ease;
+  transition: grid-template-columns 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: grid-template-columns;
 }
 
 .app-container.collapsed {

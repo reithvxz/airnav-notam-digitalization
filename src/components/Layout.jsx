@@ -9,6 +9,7 @@ import {
   Bell, Activity, Calendar as CalendarIcon, Clock,
   ChevronRight, ChevronLeft, Menu, ClipboardCheck, Briefcase
 } from 'lucide-react';
+import Chatbot from './Chatbot';
 
 export default function Layout() {
   const { user, logout } = useAuth();
@@ -95,7 +96,7 @@ export default function Layout() {
     <div className={`app-container ${!isSidebarOpen ? 'collapsed' : ''}`}>
       
       {/* 1. LEFT SIDEBAR */}
-      <aside className="left-sidebar" style={{ transition: 'width 0.3s ease' }}>
+      <aside className="left-sidebar">
         <div style={{ padding: isSidebarOpen ? '1.25rem 1.5rem' : '1.25rem 0.5rem', display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'space-between' : 'center', borderBottom: '1px solid #e2e8f0', marginBottom: '1.5rem' }}>
           {isSidebarOpen ? (
             <>
@@ -210,10 +211,12 @@ export default function Layout() {
           <h1 style={{ margin: 0, fontSize: '1.75rem', color: '#1e3a8a', fontWeight: 800, letterSpacing: '-0.5px' }}>SIMO AirNav Cabang Surabaya</h1>
           <p style={{ margin: '0.25rem 0 0', color: '#64748b', fontSize: '0.9rem', fontWeight: 500 }}>Sistem Informasi Manajemen Operasi</p>
         </div>
-        <div style={{ flex: 1, overflow: 'visible' }}>
+        <div style={{ flex: 1, overflowY: 'auto' }}>
           <Outlet />
         </div>
       </main>
+
+      <Chatbot />
 
       {/* 3. RIGHT SIDEBAR */}
       <aside className="right-sidebar">

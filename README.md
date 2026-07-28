@@ -9,11 +9,12 @@ Sistem digitalisasi terpadu untuk pengelolaan **Notice to Airmen (NOTAM)** dan *
   - **Preduty**: Tren Pengajuan Harian Preduty, Sebaran Waktu Shift (Pagi/Siang/Malam), Heatmap Kepadatan Kesiapan, dan Bar Chart Top Pengaju Laporan.
   - Dilengkapi dengan Kartu Metrik Interaktif (*clickable*) untuk navigasi cepat.
 - 📝 **Preduty, Pre-Shift & Post-Shift Dinamis**: Fitur pembuatan Form *Preduty Briefing*, *Pre-Shift Briefing* dan *Post-Shift Review* dengan UI *checklist* yang sangat cerdas (transisi otomatis ke mode teks untuk mencatat anomali), beserta pengaturan *default* waktu otomatis dan *word-wrap* untuk PDF export.
+- 🤖 **SIMO Bot (Powered by Gemini AI)**: Asisten Virtual cerdas yang didukung oleh *Google Gemini 3.5 Flash*. Terintegrasi penuh ke dalam sistem untuk menjawab pertanyaan seputar operasional NOTAM, laporan shift, dan panduan penggunaan aplikasi, lengkap dengan pengenalan identitas pengguna.
 - ✨ **Custom UI Pickers & Modals**: Menghapus tampilan *default browser* secara menyeluruh dan menggantinya dengan komponen Pop-Up *custom* bergaya premium untuk *Date Picker*, *Time Picker*, *Custom Select*, serta Modal konfirmasi penghapusan.
 - 🗄️ **Full-Stack MySQL**: Didukung oleh backend *Express.js* dan *MySQL* via *Sequelize ORM* untuk pengolahan relasional yang stabil.
 - 🔐 **Manajemen Akun Terpusat**: Manager (Admin) memegang penuh kendali pembuatan akun untuk anggota tim operasi beserta dengan unggahan foto tanda tangan digital.
 - 🎨 **Modern Glassmorphism UI**: Antarmuka *Login* dan tata letak *Sidebar* yang dikustomisasi dengan estetika *Glassmorphism*, palet biru premium, dan responsivitas halus.
-- 🔒 **Tanda Tangan & Header Otomatis**: Generator PDF menggunakan `html2pdf.js` untuk mencetak dokumen siap rilis yang secara otomatis dibubuhi kop surat, *layout* standar, dan pindaian tanda tangan personil yang mengajukan.
+- 🔒 **Tanda Tangan & Header Otomatis**: Generator PDF menggunakan `html2pdf.js` untuk mencetak dokumen siap rilis yang secara otomatis dibubuhi kop surat, *layout* standar, dan pindaian tanda tangan personil yang mengajukan. Termasuk optimisasi kompresi resolusi agar ukuran file tetap ringan.
 - 📅 **Sistem Kalender Interaktif**: Modul kalender dengan peringatan cerdas (menggunakan `@fullcalendar/react`). Mendeteksi hari libur nasional, menampilkan *Upcoming Reminders* (H-3, H-1), dan pencatatan agenda berkategori warna.
 
 ## Fitur Utama
@@ -59,6 +60,11 @@ Pastikan kamu sudah menginstal [Node.js](https://nodejs.org/) dan **XAMPP (MySQL
    # Install dependensi backend
    cd backend
    npm install
+
+   # Setup File Environment
+   # Buat file bernama .env di dalam folder backend lalu isi dengan baris berikut:
+   # GEMINI_API_KEY=KODE_API_KEY_GOOGLE_ANDA
+   # (Dapatkan API Key melalui Google AI Studio)
 
    # Kembali ke folder utama dan install dependensi frontend
    cd ..
