@@ -77,9 +77,11 @@ export default function Login() {
         <div style={{
           flex: 1,
           position: 'relative',
+          backgroundColor: '#0f172a', /* Dark slate background in case image doesn't fill */
           backgroundImage: 'url("/login-bg.jpg")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          backgroundSize: '100% auto', /* Fix width, adjust height naturally (no aggressive zoom) */
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center 10%', /* Shift slightly downwards */
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
