@@ -88,7 +88,7 @@ export default function Login() {
         }} className="hide-on-mobile">
           <div style={{
             position: 'absolute', inset: 0,
-            background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.6) 0%, rgba(30, 58, 138, 0.85) 100%)',
+            background: 'rgba(0, 0, 0, 0.2)',
             zIndex: 1
           }}></div>
           
