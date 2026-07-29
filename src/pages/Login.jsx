@@ -250,40 +250,46 @@ export default function Login() {
               background: 'white', borderRadius: '16px', padding: '2rem', width: '100%', maxWidth: '400px',
               boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
             }}>
-              <h2 style={{ margin: '0 0 1.5rem', fontSize: '1.25rem', color: '#1e293b' }}>Ganti Password ({username})</h2>
+              <h2 style={{ margin: '0 0 1.5rem', fontSize: '1.25rem', color: '#2563eb' }}>Ganti Password ({username})</h2>
               
               {pwdError && <div style={{ background: '#fef2f2', color: '#ef4444', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.875rem' }}>{pwdError}</div>}
               {pwdSuccess && <div style={{ background: '#ecfdf5', color: '#10b981', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.875rem' }}>{pwdSuccess}</div>}
               
               <form onSubmit={handlePasswordChange}>
                 <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: '#64748b' }}>Password Lama (admin)</label>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: '#000000' }}>Password Lama (admin)</label>
                   <input 
                     type={showPassword ? "text" : "password"} 
                     value={pwdData.oldPassword}
                     onChange={e => setPwdData({...pwdData, oldPassword: e.target.value})}
                     required
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none' }}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', transition: 'border-color 0.2s' }}
+                    onFocus={(e) => e.target.style.borderColor = '#2563eb'}
+                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                   />
                 </div>
                 <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: '#64748b' }}>Password Baru</label>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: '#000000' }}>Password Baru</label>
                   <input 
                     type={showPassword ? "text" : "password"} 
                     value={pwdData.newPassword}
                     onChange={e => setPwdData({...pwdData, newPassword: e.target.value})}
                     required
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none' }}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', transition: 'border-color 0.2s' }}
+                    onFocus={(e) => e.target.style.borderColor = '#2563eb'}
+                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                   />
                 </div>
                 <div style={{ marginBottom: '0.75rem' }}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: '#64748b' }}>Konfirmasi Password Baru</label>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: '#000000' }}>Konfirmasi Password Baru</label>
                   <input 
                     type={showPassword ? "text" : "password"} 
                     value={pwdData.confirmPassword}
                     onChange={e => setPwdData({...pwdData, confirmPassword: e.target.value})}
                     required
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none' }}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', transition: 'border-color 0.2s' }}
+                    onFocus={(e) => e.target.style.borderColor = '#2563eb'}
+                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                   />
                 </div>
                 
@@ -291,13 +297,17 @@ export default function Login() {
                   <button 
                     type="button" 
                     onClick={() => setShowPasswordModal(false)}
-                    style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', color: '#64748b', fontWeight: 500 }}
+                    style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: '1px solid #2563eb', background: 'white', cursor: 'pointer', color: '#2563eb', fontWeight: 600, transition: 'background 0.2s' }}
+                    onMouseOver={(e) => e.target.style.background = '#eff6ff'}
+                    onMouseOut={(e) => e.target.style.background = 'white'}
                   >
                     Batal
                   </button>
                   <button 
                     type="submit"
-                    style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: 'none', background: '#8b5cf6', color: 'white', cursor: 'pointer', fontWeight: 600 }}
+                    style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: 'none', background: '#2563eb', color: 'white', cursor: 'pointer', fontWeight: 600, transition: 'background 0.2s', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)' }}
+                    onMouseOver={(e) => e.target.style.background = '#1d4ed8'}
+                    onMouseOut={(e) => e.target.style.background = '#2563eb'}
                   >
                     Simpan
                   </button>
