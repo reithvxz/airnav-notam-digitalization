@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNotams } from '../context/NotamContext';
 import { FileText, Search, CheckCircle, Clock, MapPin } from 'lucide-react';
 import PdfViewerModal from '../components/PdfViewerModal';
+import { CustomSelect } from '../components/CustomPickers';
 
 export default function EmployeeDashboard() {
   const { notams } = useNotams();
@@ -251,18 +252,19 @@ export default function EmployeeDashboard() {
             />
           </div>
           
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="input-field"
-            style={{ width: '200px', marginBottom: 0, borderRadius: '10px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}
-          >
-            <option value="all">Semua Jenis</option>
-            <option value="NOTAM New">NOTAM New</option>
-            <option value="NOTAM Replace">NOTAM Replace</option>
-            <option value="NOTAM Cancel">NOTAM Cancel</option>
-            <option value="Assessment Only">Assessment Only</option>
-          </select>
+          <div style={{ width: '200px' }}>
+            <CustomSelect
+              value={typeFilter}
+              onChange={(val) => setTypeFilter(val)}
+              options={[
+                { value: 'all', label: 'Semua Jenis' },
+                { value: 'NOTAM New', label: 'NOTAM New' },
+                { value: 'NOTAM Replace', label: 'NOTAM Replace' },
+                { value: 'NOTAM Cancel', label: 'NOTAM Cancel' },
+                { value: 'Assessment Only', label: 'Assessment Only' }
+              ]}
+            />
+          </div>
         </div>
 
         {/* Content */}

@@ -190,7 +190,7 @@ export function CustomSelect({ value, onChange, options, placeholder, label }) {
         onClick={() => setIsOpen(!isOpen)}
         style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f8fafc', border: `1.5px solid ${isOpen ? '#2563eb' : '#e2e8f0'}`, borderRadius: 8, padding: '0.5rem 0.75rem', cursor: 'pointer', transition: 'all 0.2s' }}
       >
-        <span style={{ fontWeight: 600, color: selectedOption ? '#1e293b' : '#94a3b8', fontSize: '0.9rem', flex: 1 }}>
+        <span style={{ fontWeight: 600, color: selectedOption ? '#1e293b' : '#94a3b8', fontSize: '0.9rem', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <ChevronDown size={16} color="#94a3b8" />
@@ -206,8 +206,8 @@ export function CustomSelect({ value, onChange, options, placeholder, label }) {
               onClick={() => { onChange(opt.value); setIsOpen(false); }}
               style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.6rem 0.75rem', borderRadius: 8, cursor: 'pointer', background: value === opt.value ? '#eff6ff' : 'transparent' }}
             >
-              {value === opt.value && <Check size={14} color="#2563eb" />}
-              <span style={{ fontWeight: value === opt.value ? 700 : 500, color: value === opt.value ? '#2563eb' : '#1e293b', fontSize: '0.85rem' }}>
+              {value === opt.value && <Check size={14} color="#2563eb" style={{ flexShrink: 0 }} />}
+              <span style={{ fontWeight: value === opt.value ? 700 : 500, color: value === opt.value ? '#2563eb' : '#1e293b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
                 {opt.label}
               </span>
             </div>

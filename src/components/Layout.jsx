@@ -25,6 +25,31 @@ export default function Layout() {
   const [pwdSuccess, setPwdSuccess] = useState('');
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [extraActivities, setExtraActivities] = useState([]);
+
+  useEffect(() => {
+    async function fetchActivities() {
+      try {
+        const [resBrief, resPost, resPre] = await Promise.all([
+          fetch('http://localhost:3000/api/briefings'),
+          fetch('http://localhost:3000/api/postshifts'),
+          fetch('http://localhost:3000/api/preduties')
+        ]);
+        const briefs = resBrief.ok ? await resBrief.json() : [];
+        const posts = resPost.ok ? await resPost.json() : [];
+        const pres = resPre.ok ? await resPre.json() : [];
+
+        const briefActs = briefs.map(b => ({ ...b, actType: 'briefing', text: 'membuat Pre-Shift Briefing' }));
+        const postActs = posts.map(p => ({ ...p, actType: 'postshift', text: 'membuat Post-Shift Review' }));
+        const preActs = pres.map(p => ({ ...p, actType: 'preduty', text: 'membuat Preduty Briefing' }));
+
+        setExtraActivities([...briefActs, ...postActs, ...preActs]);
+      } catch (err) {
+        console.error('Failed to fetch extra activities:', err);
+      }
+    }
+    fetchActivities();
+  }, []);
 
   // Trigger resize event for FullCalendar when sidebar toggles
   useEffect(() => {
@@ -87,10 +112,13 @@ export default function Layout() {
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .slice(0, 5);
 
-  // Derive Recent Activities from NOTAMs
-  const recentActivities = (notams || [])
+  // Derive Recent Activities from all sources
+  const recentActivities = [
+    ...(notams || []).map(n => ({ ...n, actType: 'notam', text: `membuat NOTAM ${n.formNo || ''}` })),
+    ...extraActivities
+  ]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 5);
+    .slice(0, 10);
 
   return (
     <div className={`app-container ${!isSidebarOpen ? 'collapsed' : ''}`}>
@@ -128,12 +156,12 @@ export default function Layout() {
         {/* User Profile */}
         <div style={{ padding: isSidebarOpen ? '0 1.5rem 2rem' : '0 0.5rem 2rem', display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', gap: '1rem', borderBottom: '1px solid #e2e8f0', marginBottom: '1.5rem' }}>
           <div style={{ width: isSidebarOpen ? '48px' : '40px', height: isSidebarOpen ? '48px' : '40px', borderRadius: '12px', background: 'linear-gradient(135deg, #2563eb, #1e3a8a)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: isSidebarOpen ? '1.25rem' : '1.1rem', flexShrink: 0 }}>
-            {user.initial}
+            {user.role === 'employee' ? <User size={isSidebarOpen ? 24 : 20} /> : user.initial}
           </div>
           {isSidebarOpen && (
             <div style={{ overflow: 'hidden' }}>
               <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {user.name || user.nama}
+                {user.role === 'employee' ? 'EMPLOYEE' : (user.name || user.nama)}
               </h3>
               <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: '#64748b', lineHeight: 1.3, wordBreak: 'break-word' }}>
                 {user.jabatan}
@@ -145,41 +173,43 @@ export default function Layout() {
         {/* Dashboards Menu */}
         <div className="sidebar-nav-section" style={{ padding: isSidebarOpen ? '0 1rem' : '0 0.5rem' }}>
           {isSidebarOpen && <div className="sidebar-nav-title">Dashboards</div>}
-          <Link to={user.role === 'admin' ? '/admin/dashboard' : '/employee/dashboard'} className={`sidebar-link ${location.pathname === '/admin/dashboard' || location.pathname === '/employee/dashboard' ? 'active' : ''}`} title={!isSidebarOpen ? 'Overview' : ''} style={{ justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '0.6rem 1rem' : '0.6rem 0' }}>
-            <LayoutDashboard size={18} /> {isSidebarOpen && 'Overview'}
+          <Link to={user.role === 'admin' ? '/admin/dashboard' : '/employee/dashboard'} className={`sidebar-link ${location.pathname === '/admin/dashboard' || location.pathname === '/employee/dashboard' ? 'active' : ''}`} title={!isSidebarOpen ? (user.role === 'admin' ? 'Overview' : 'NOTAM') : ''} style={{ justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '0.6rem 1rem' : '0.6rem 0' }}>
+            {user.role === 'admin' ? <LayoutDashboard size={18} /> : <FileText size={18} />} {isSidebarOpen && (user.role === 'admin' ? 'Overview' : 'NOTAM')}
           </Link>
           {user.role === 'admin' && (
-            <>
-              <Link to="/admin/notams" className={`sidebar-link ${location.pathname === '/admin/notams' || location.pathname === '/admin/create-notam' ? 'active' : ''}`} title={!isSidebarOpen ? 'NOTAM' : ''} style={{ justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '0.6rem 1rem' : '0.6rem 0' }}>
-                <FileText size={18} /> {isSidebarOpen && 'NOTAM'}
-              </Link>
-              <Link to="/admin/preshifts" className={`sidebar-link ${location.pathname === '/admin/preshifts' || location.pathname === '/admin/create-briefing' ? 'active' : ''}`} title={!isSidebarOpen ? 'Pre-Shift' : ''} style={{ justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '0.6rem 1rem' : '0.6rem 0' }}>
-                <CheckSquare size={18} /> {isSidebarOpen && 'Pre-Shift'}
-              </Link>
-              <Link to="/admin/postshifts" className={`sidebar-link ${location.pathname === '/admin/postshifts' || location.pathname === '/admin/create-postshift' ? 'active' : ''}`} title={!isSidebarOpen ? 'Post-Shift' : ''} style={{ justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '0.6rem 1rem' : '0.6rem 0' }}>
-                <ClipboardCheck size={18} /> {isSidebarOpen && 'Post-Shift'}
-              </Link>
-              <Link to="/admin/create-preduty" className={`sidebar-link ${location.pathname === '/admin/create-preduty' ? 'active' : ''}`} title={!isSidebarOpen ? 'Preduty' : ''} style={{ justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '0.6rem 1rem' : '0.6rem 0' }}>
-                <Briefcase size={18} /> {isSidebarOpen && 'Preduty'}
-              </Link>
-              <Link to="/admin/calendar" className={`sidebar-link ${location.pathname === '/admin/calendar' ? 'active' : ''}`} title={!isSidebarOpen ? 'Calendar' : ''} style={{ justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '0.6rem 1rem' : '0.6rem 0' }}>
-                <CalendarIcon size={18} /> {isSidebarOpen && 'Calendar'}
-              </Link>
-            </>
+            <Link to="/admin/notams" className={`sidebar-link ${location.pathname === '/admin/notams' ? 'active' : ''}`} title={!isSidebarOpen ? 'NOTAM' : ''} style={{ justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '0.6rem 1rem' : '0.6rem 0' }}>
+              <FileText size={18} /> {isSidebarOpen && 'NOTAM'}
+            </Link>
+          )}
+          <Link to={user.role === 'admin' ? '/admin/preshifts' : '/employee/preshifts'} className={`sidebar-link ${location.pathname.includes('preshifts') ? 'active' : ''}`} title={!isSidebarOpen ? 'Pre-Shift' : ''} style={{ justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '0.6rem 1rem' : '0.6rem 0' }}>
+            <CheckSquare size={18} /> {isSidebarOpen && 'Pre-Shift'}
+          </Link>
+          <Link to={user.role === 'admin' ? '/admin/postshifts' : '/employee/postshifts'} className={`sidebar-link ${location.pathname.includes('postshifts') ? 'active' : ''}`} title={!isSidebarOpen ? 'Post-Shift' : ''} style={{ justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '0.6rem 1rem' : '0.6rem 0' }}>
+            <ClipboardCheck size={18} /> {isSidebarOpen && 'Post-Shift'}
+          </Link>
+          <Link to={user.role === 'admin' ? '/admin/predutys' : '/employee/predutys'} className={`sidebar-link ${location.pathname.includes('predutys') ? 'active' : ''}`} title={!isSidebarOpen ? 'Preduty' : ''} style={{ justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '0.6rem 1rem' : '0.6rem 0' }}>
+            <Briefcase size={18} /> {isSidebarOpen && 'Preduty'}
+          </Link>
+          {user.role === 'admin' && (
+            <Link to="/admin/calendar" className={`sidebar-link ${location.pathname === '/admin/calendar' ? 'active' : ''}`} title={!isSidebarOpen ? 'Calendar' : ''} style={{ justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '0.6rem 1rem' : '0.6rem 0' }}>
+              <CalendarIcon size={18} /> {isSidebarOpen && 'Calendar'}
+            </Link>
           )}
         </div>
 
         {/* Settings Menu */}
         <div className="sidebar-nav-section" style={{ marginTop: 'auto', padding: isSidebarOpen ? '0 1rem' : '0 0.5rem' }}>
           {isSidebarOpen && <div className="sidebar-nav-title">Settings</div>}
-          <button 
-            onClick={() => setShowPasswordModal(true)} 
-            className="sidebar-link" 
-            title={!isSidebarOpen ? 'Ganti Password' : ''}
-            style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '0.6rem 1rem' : '0.6rem 0' }}
-          >
-            <Key size={18} /> {isSidebarOpen && 'Ganti Password'}
-          </button>
+          {user.role !== 'employee' && (
+            <button 
+              onClick={() => setShowPasswordModal(true)} 
+              className="sidebar-link" 
+              title={!isSidebarOpen ? 'Ganti Password' : ''}
+              style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', justifyContent: isSidebarOpen ? 'flex-start' : 'center', padding: isSidebarOpen ? '0.6rem 1rem' : '0.6rem 0' }}
+            >
+              <Key size={18} /> {isSidebarOpen && 'Ganti Password'}
+            </button>
+          )}
           
           {user.role === 'admin' && (
             <>
@@ -294,7 +324,7 @@ export default function Layout() {
               
               {recentActivities.map(act => {
                 const formData = act.formData || {};
-                const creatorName = formData.creatorName || act.creatorName || act.creator || act.createdBy || '-';
+                const creatorName = formData.creatorName || act.incomingManager?.nama || act.managerOnDutyInfo?.nama || act.creatorName || act.creator || act.createdBy || '-';
                 return (
                 <div key={act.id} style={{ display: 'flex', gap: '0.75rem', position: 'relative', zIndex: 1 }}>
                   <div style={{ width: '32px', height: '32px', borderRadius: '50%', border: '2px solid white', background: '#eff6ff', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -302,7 +332,7 @@ export default function Layout() {
                   </div>
                   <div style={{ paddingTop: '0.25rem' }}>
                     <p style={{ margin: 0, fontSize: '0.8rem', color: '#334155', lineHeight: 1.4 }}>
-                      <span style={{ fontWeight: 600, color: '#0f172a' }}>{creatorName}</span> membuat NOTAM <span style={{ fontWeight: 600 }}>{act.formNo}</span>
+                      <span style={{ fontWeight: 600, color: '#0f172a' }}>{creatorName}</span> <span style={{ fontWeight: 500 }}>{act.text}</span>
                     </p>
                     <p style={{ margin: '0.2rem 0 0', fontSize: '0.7rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                       <Clock size={10} />

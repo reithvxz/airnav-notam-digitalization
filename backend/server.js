@@ -407,6 +407,7 @@ app.get('/api/preduties', async (req, res) => {
     const preduties = await Preduty.findAll({ order: [['createdAt', 'DESC']] });
     const parsed = preduties.map(p => {
       const data = p.toJSON();
+      if (data.managerOnDutyInfo) data.managerOnDutyInfo = JSON.parse(data.managerOnDutyInfo);
       if (data.fasilitasData) data.fasilitasData = JSON.parse(data.fasilitasData);
       if (data.othersData) data.othersData = JSON.parse(data.othersData);
       return data;
@@ -422,6 +423,7 @@ app.get('/api/preduties/:id', async (req, res) => {
     const preduty = await Preduty.findByPk(req.params.id);
     if (!preduty) return res.status(404).json({ error: 'Not found' });
     const data = preduty.toJSON();
+    if (data.managerOnDutyInfo) data.managerOnDutyInfo = JSON.parse(data.managerOnDutyInfo);
     if (data.fasilitasData) data.fasilitasData = JSON.parse(data.fasilitasData);
     if (data.othersData) data.othersData = JSON.parse(data.othersData);
     res.json(data);
@@ -432,12 +434,13 @@ app.get('/api/preduties/:id', async (req, res) => {
 
 app.post('/api/preduties', async (req, res) => {
   try {
-    const { id, date, time, managerOnDuty, shift, personelImage, fasilitasData, notamText, trafficImage, weatherImage, othersData, reminderText, instructionText, createdBy } = req.body;
+    const { id, date, time, managerOnDuty, managerOnDutyInfo, shift, personelImage, fasilitasData, notamText, trafficImage, weatherImage, othersData, reminderText, instructionText, createdBy } = req.body;
     const newPreduty = await Preduty.create({
       id,
       date,
       time,
       managerOnDuty,
+      managerOnDutyInfo: managerOnDutyInfo ? JSON.stringify(managerOnDutyInfo) : null,
       shift,
       personelImage,
       fasilitasData: fasilitasData ? JSON.stringify(fasilitasData) : null,

@@ -8,9 +8,10 @@ Sistem digitalisasi terpadu untuk pengelolaan **Notice to Airmen (NOTAM)** dan *
   - **Pre/Post-Shift**: Komparasi Pre vs Post per Shift, Distribusi Shift, Rasio Keterangan/Anomali Tambahan, Aktivitas per Supervisor, Aktivitas Harian, dan Tren Kepatuhan Pengumpulan Mingguan.
   - **Preduty**: Tren Pengajuan Harian Preduty, Sebaran Waktu Shift (Pagi/Siang/Malam), Heatmap Kepadatan Kesiapan, dan Bar Chart Top Pengaju Laporan.
   - Dilengkapi dengan Kartu Metrik Interaktif (*clickable*) untuk navigasi cepat.
-- 📝 **Preduty, Pre-Shift & Post-Shift Dinamis**: Fitur pembuatan Form *Preduty Briefing*, *Pre-Shift Briefing* dan *Post-Shift Review* dengan UI *checklist* yang sangat cerdas (transisi otomatis ke mode teks untuk mencatat anomali), beserta pengaturan *default* waktu otomatis dan *word-wrap* untuk PDF export.
+- 📝 **Preduty, Pre-Shift & Post-Shift Dinamis**: Fitur pembuatan Form *Preduty Briefing*, *Pre-Shift Briefing* dan *Post-Shift Review* dengan UI *checklist* yang sangat cerdas (transisi otomatis ke mode teks untuk mencatat anomali), beserta pengaturan *default* waktu otomatis dan *word-wrap* untuk PDF export. Tersedia juga **Filter Spesifik** untuk menyaring dokumen berdasarkan *Shift*, *Incoming Manager*, dan *Outgoing Manager*.
 - 🤖 **SIMO Bot (Powered by Gemini AI)**: Asisten Virtual cerdas yang didukung oleh *Google Gemini 3.5 Flash*. Terintegrasi penuh ke dalam sistem untuk menjawab pertanyaan seputar operasional NOTAM, laporan shift, dan panduan penggunaan aplikasi, lengkap dengan pengenalan identitas pengguna.
 - ✨ **Custom UI Pickers & Modals**: Menghapus tampilan *default browser* secara menyeluruh dan menggantinya dengan komponen Pop-Up *custom* bergaya premium untuk *Date Picker*, *Time Picker*, *Custom Select*, serta Modal konfirmasi penghapusan.
+- 🕒 **Aktivitas Terbaru Lebih Komprehensif**: Fitur riwayat kini menarik pembaruan 10 aktivitas terkini dari seluruh jenis dokumen (NOTAM, Preduty, dan Manajemen Shift) secara *real-time*.
 - 🗄️ **Full-Stack MySQL**: Didukung oleh backend *Express.js* dan *MySQL* via *Sequelize ORM* untuk pengolahan relasional yang stabil.
 - 🔐 **Manajemen Akun Terpusat**: Manager (Admin) memegang penuh kendali pembuatan akun untuk anggota tim operasi beserta dengan unggahan foto tanda tangan digital.
 - 🎨 **Modern Glassmorphism UI**: Antarmuka *Login* dan tata letak *Sidebar* yang dikustomisasi dengan estetika *Glassmorphism*, palet biru premium, dan responsivitas halus.
@@ -28,10 +29,11 @@ Aplikasi ini mendistribusikan akses berdasarkan Role pengguna:
    - **Modul Pengguna**: Mengatur akun sistem dan memverifikasi tanda tangan digital karyawan.
    - **Modul Kalender**: Merencanakan agenda dengan pengingat dan penanda libur otomatis.
 
-2. **Karyawan Biasa**
-   - **Dashboard Karyawan**: Melihat seluruh dokumen (NOTAM dan Shift) yang telah diterbitkan dengan format kartu yang rapi.
-   - **Filter Waktu & Status Pintar**: Memungkinkan pencarian dokumen yang kuat berdasarkan waktu, status, pembuat, dan jenis.
-   - **PDF Viewer Built-in**: Fitur pratinjau dokumen langsung di dalam aplikasi (tanpa membuka *tab* baru) untuk pengalaman yang instan.
+2. **Employee (Karyawan)**
+   - **Dashboard Employee**: Mengakses halaman dokumen NOTAM (sebagai *landing page* default), serta melihat riwayat arsip dokumen *Preduty*, *Pre-Shift*, dan *Post-Shift*.
+   - **Akses Dokumen Terbuka**: Melihat seluruh dokumen operasional yang telah diterbitkan lengkap dengan *Filter Waktu & Status Pintar* (mencari berdasarkan shift, status, pembuat, dan jenis).
+   - **PDF Viewer Built-in**: Fitur pratinjau seluruh format dokumen (dengan fungsi potong multi-halaman proporsional otomatis) langsung di dalam aplikasi untuk pengalaman instan.
+   - **Akses Terbatas Terjaga**: Fitur modifikasi profil seperti penggantian *password* dikunci (*disabled*) demi keamanan tata kelola akun terpusat.
 
 ## Teknologi yang Digunakan
 

@@ -1,8 +1,7 @@
 import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
-import PostShiftTemplate, { PAGE_WIDTH } from './PostShiftTemplate';
+import generatePdf from '../utils/pdfGenerator';
+import PostShiftTemplate from './PostShiftTemplate';
 import { X, Download } from 'lucide-react';
 
 export default function PostShiftViewerModal({ postshift, onClose }) {
@@ -14,30 +13,7 @@ export default function PostShiftViewerModal({ postshift, onClose }) {
   const handleExportPDF = async () => {
     setExporting(true);
     try {
-      await new Promise(r => setTimeout(r, 300));
-      const canvas = await html2canvas(templateRef.current, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        windowWidth: PAGE_WIDTH + 80,
-      });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const A4_WIDTH = 210;
-      const A4_HEIGHT = 297;
-      
-      let pdfWidth = A4_WIDTH;
-      let pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-      if (pdfHeight > A4_HEIGHT) {
-        pdfHeight = A4_HEIGHT;
-        pdfWidth = (canvas.width * pdfHeight) / canvas.height;
-      }
-      
-      const xOffset = (A4_WIDTH - pdfWidth) / 2;
-      pdf.addImage(imgData, 'PNG', xOffset, 0, pdfWidth, pdfHeight);
-      pdf.save(`PostShift_Review_${postshift.date?.replace(/ /g,'_')}.pdf`);
+      await generatePdf(templateRef.current, `Post-Shift_Review_${postshift.date?.replace(/ /g,'_')}.pdf`);
     } catch (err) {
       console.error('PDF export error:', err);
     } finally {

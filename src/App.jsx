@@ -59,6 +59,10 @@ function AppRoutes() {
           element={<ProtectedRoute allowedRole="admin"><AdminDashboard defaultTab="calendar" /></ProtectedRoute>} 
         />
         <Route 
+          path="/admin/predutys" 
+          element={<ProtectedRoute allowedRole="admin"><AdminDashboard defaultTab="preduty" /></ProtectedRoute>} 
+        />
+        <Route 
           path="/admin/create-notam" 
           element={<ProtectedRoute allowedRole="admin"><CreateNotam /></ProtectedRoute>} 
         />
@@ -86,6 +90,18 @@ function AppRoutes() {
         <Route 
           path="/employee/dashboard" 
           element={<ProtectedRoute allowedRole="employee"><EmployeeDashboard /></ProtectedRoute>} 
+        />
+        <Route 
+          path="/employee/preshifts" 
+          element={<ProtectedRoute allowedRole="employee"><AdminDashboard defaultTab="briefing" /></ProtectedRoute>} 
+        />
+        <Route 
+          path="/employee/postshifts" 
+          element={<ProtectedRoute allowedRole="employee"><AdminDashboard defaultTab="postshift" /></ProtectedRoute>} 
+        />
+        <Route 
+          path="/employee/predutys" 
+          element={<ProtectedRoute allowedRole="employee"><AdminDashboard defaultTab="preduty" /></ProtectedRoute>} 
         />
       </Route>
     </Routes>

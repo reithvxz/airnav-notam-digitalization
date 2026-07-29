@@ -170,6 +170,7 @@ export default function CreatePreduty() {
       date,
       time,
       managerOnDuty: user.initial,
+      managerOnDutyInfo: { nama: user?.nama, jabatan: user?.jabatan, ttd: user?.tanda_tangan },
       shift,
       personelImage,
       fasilitasData: fasilitas,
@@ -196,8 +197,10 @@ export default function CreatePreduty() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Gagal menyimpan');
       
-      setSuccessMsg('Form Preduty berhasil disimpan dan PDF berhasil diunduh!');
-      resetForm();
+      setSuccessMsg('Form Preduty berhasil disimpan dan PDF berhasil diunduh! Mengalihkan...');
+      setTimeout(() => {
+        navigate('/admin/predutys');
+      }, 1500);
     } catch (err) {
       setError(err.message);
     } finally {

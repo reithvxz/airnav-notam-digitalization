@@ -193,6 +193,10 @@ const Preduty = sequelize.define('Preduty', {
     type: DataTypes.STRING,
     allowNull: false
   },
+  managerOnDutyInfo: {
+    type: DataTypes.TEXT, // JSON {nama, jabatan, ttd}
+    allowNull: true
+  },
   shift: {
     type: DataTypes.STRING,
     allowNull: false

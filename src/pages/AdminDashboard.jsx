@@ -1,12 +1,14 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNotams } from '../context/NotamContext';
+import { useAuth } from '../context/AuthContext';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Plus, FileText, CheckCircle, Clock, TrendingUp, Activity, MapPin, CheckSquare, Trash2, Calendar } from 'lucide-react';
+import { Plus, FileText, CheckCircle, Clock, TrendingUp, Activity, MapPin, CheckSquare, Trash2, Calendar, Sun, Cloud, Moon } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { CustomSelect } from '../components/CustomPickers';
 import PdfViewerModal from '../components/PdfViewerModal';
 import BriefingViewerModal from '../components/BriefingViewerModal';
 import PostShiftViewerModal from '../components/PostShiftViewerModal';
+import PredutyViewerModal from '../components/PredutyViewerModal';
 import CalendarView from '../components/CalendarView';
 import NotamAnalytics from '../components/dashboard/NotamAnalytics';
 import ShiftAnalytics from '../components/dashboard/ShiftAnalytics';
@@ -29,8 +31,56 @@ function timeAgo(dateStr) {
   return `${diffMonths} bulan lalu`;
 }
 
+const ShiftStats = ({ data }) => {
+  const pagi = data.filter(d => d.shift === 'PAGI').length;
+  const siang = data.filter(d => d.shift === 'SIANG').length;
+  const malam = data.filter(d => d.shift === 'MALAM').length;
+  
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '1.5rem' }}>
+      <div className="stat-card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <span className="stat-title">Total Dokumen</span>
+          <div style={{ padding: '0.5rem', backgroundColor: '#eff6ff', borderRadius: '10px', color: '#3b82f6' }}>
+            <FileText size={20} />
+          </div>
+        </div>
+        <span className="stat-value">{data.length}</span>
+      </div>
+      <div className="stat-card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <span className="stat-title">Shift Pagi</span>
+          <div style={{ padding: '0.5rem', backgroundColor: '#fef3c7', borderRadius: '10px', color: '#d97706' }}>
+            <Sun size={20} />
+          </div>
+        </div>
+        <span className="stat-value">{pagi}</span>
+      </div>
+      <div className="stat-card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <span className="stat-title">Shift Siang</span>
+          <div style={{ padding: '0.5rem', backgroundColor: '#d1fae5', borderRadius: '10px', color: '#059669' }}>
+            <Cloud size={20} />
+          </div>
+        </div>
+        <span className="stat-value">{siang}</span>
+      </div>
+      <div className="stat-card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <span className="stat-title">Shift Malam</span>
+          <div style={{ padding: '0.5rem', backgroundColor: '#e2e8f0', borderRadius: '10px', color: '#475569' }}>
+            <Moon size={20} />
+          </div>
+        </div>
+        <span className="stat-value">{malam}</span>
+      </div>
+    </div>
+  );
+};
+
 export default function AdminDashboard({ defaultTab = 'overview' }) {
-  const { notams } = useNotams();
+  const { notams, deleteNotam } = useNotams();
+  const { user } = useAuth();
   const [statusFilter, setStatusFilter] = useState('all');
   const [jenisFilter, setJenisFilter] = useState('all');
   const [selectedNotam, setSelectedNotam] = useState(null);
@@ -52,6 +102,58 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
   const [events, setEvents] = useState([]);
   const [selectedBriefing, setSelectedBriefing] = useState(null);
   const [selectedPostShift, setSelectedPostShift] = useState(null);
+  const [selectedPreduty, setSelectedPreduty] = useState(null);
+
+  const [briefingShiftFilter, setBriefingShiftFilter] = useState('all');
+  const [briefingIncomingFilter, setBriefingIncomingFilter] = useState('all');
+  const [briefingOutgoingFilter, setBriefingOutgoingFilter] = useState('all');
+
+  const [postshiftShiftFilter, setPostshiftShiftFilter] = useState('all');
+  const [postshiftIncomingFilter, setPostshiftIncomingFilter] = useState('all');
+  const [postshiftOutgoingFilter, setPostshiftOutgoingFilter] = useState('all');
+
+  const [predutyShiftFilter, setPredutyShiftFilter] = useState('all');
+
+  const { incomingOptions, outgoingOptions } = useMemo(() => {
+    const allManagers = new Map();
+    [...briefings, ...postshifts].forEach(item => {
+      if (item.incomingManager) allManagers.set(item.incomingManager.initial, item.incomingManager.nama);
+      if (item.outgoingManager) allManagers.set(item.outgoingManager.initial, item.outgoingManager.nama);
+    });
+    
+    const managerOpts = Array.from(allManagers.entries())
+      .filter(([initial, nama]) => !nama.toLowerCase().includes('employee') && !nama.toLowerCase().includes('karyawan'))
+      .map(([initial, nama]) => ({ value: initial, label: `${nama} (${initial})` }));
+
+    return {
+      incomingOptions: [{ value: 'all', label: 'Semua Incoming Manager' }, ...managerOpts],
+      outgoingOptions: [{ value: 'all', label: 'Semua Outgoing Manager' }, ...managerOpts]
+    };
+  }, [briefings, postshifts]);
+
+  const filteredBriefings = useMemo(() => {
+    return briefings.filter(b => {
+      const matchShift = briefingShiftFilter === 'all' || b.shift === briefingShiftFilter;
+      const matchIncoming = briefingIncomingFilter === 'all' || b.incomingManager?.initial === briefingIncomingFilter;
+      const matchOutgoing = briefingOutgoingFilter === 'all' || b.outgoingManager?.initial === briefingOutgoingFilter;
+      return matchShift && matchIncoming && matchOutgoing;
+    });
+  }, [briefings, briefingShiftFilter, briefingIncomingFilter, briefingOutgoingFilter]);
+
+  const filteredPostshifts = useMemo(() => {
+    return postshifts.filter(p => {
+      const matchShift = postshiftShiftFilter === 'all' || p.shift === postshiftShiftFilter;
+      const matchIncoming = postshiftIncomingFilter === 'all' || p.incomingManager?.initial === postshiftIncomingFilter;
+      const matchOutgoing = postshiftOutgoingFilter === 'all' || p.outgoingManager?.initial === postshiftOutgoingFilter;
+      return matchShift && matchIncoming && matchOutgoing;
+    });
+  }, [postshifts, postshiftShiftFilter, postshiftIncomingFilter, postshiftOutgoingFilter]);
+
+  const filteredPreduties = useMemo(() => {
+    return preduties.filter(p => {
+      return predutyShiftFilter === 'all' || p.shift === predutyShiftFilter;
+    });
+  }, [preduties, predutyShiftFilter]);
 
   useEffect(() => {
     if (mainTab === 'briefing' || mainTab === 'overview') {
@@ -66,7 +168,7 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
         .then(data => setPostshifts(Array.isArray(data) ? data : []))
         .catch(() => setPostshifts([]));
     }
-    if (mainTab === 'overview') {
+    if (mainTab === 'overview' || mainTab === 'preduty') {
       fetch('http://localhost:3000/api/preduties')
         .then(r => r.json())
         .then(data => setPreduties(Array.isArray(data) ? data : []))
@@ -92,6 +194,13 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
     if (!window.confirm('Hapus post-shift ini?')) return;
     await fetch(`http://localhost:3000/api/postshifts/${id}`, { method: 'DELETE' });
     setPostshifts(prev => prev.filter(p => p.id !== id));
+  };
+
+  const handleDeletePreduty = async (id, e) => {
+    e.stopPropagation();
+    if (!window.confirm('Hapus preduty briefing ini?')) return;
+    await fetch(`http://localhost:3000/api/preduties/${id}`, { method: 'DELETE' });
+    setPreduties(prev => prev.filter(p => p.id !== id));
   };
 
   const now = new Date();
@@ -403,6 +512,7 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
             {mainTab === 'notam' && 'NOTAM'}
             {mainTab === 'briefing' && 'Pre-Shift'}
             {mainTab === 'postshift' && 'Post-Shift'}
+            {mainTab === 'preduty' && 'Preduty'}
             {mainTab === 'calendar' && 'Calendar'}
           </h1>
           <p className="page-subtitle" style={{ fontSize: '0.95rem', color: '#3b82f6', margin: 0, fontWeight: 500 }}>
@@ -410,6 +520,7 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
             {mainTab === 'notam' && 'Manajemen dan daftar penerbitan dokumen NOTAM.'}
             {mainTab === 'briefing' && 'Checklist persiapan sebelum pergantian shift dimulai.'}
             {mainTab === 'postshift' && 'Review operasional sesudah shift selesai.'}
+            {mainTab === 'preduty' && 'Persiapan awal operasional sebelum bertugas.'}
             {mainTab === 'calendar' && 'Jadwal dan agenda operasional.'}
           </p>
         </div>
@@ -459,9 +570,11 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
             <h3 style={{ margin: 0, fontSize: '1.1rem' }}>
               Daftar NOTAM <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'normal', marginLeft: 8 }}>({filteredNotams.length} dokumen)</span>
             </h3>
-            <Link to="/admin/create-notam" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', padding: '0.45rem 1rem' }}>
-              <Plus size={15} /> Buat NOTAM Baru
-            </Link>
+            {user?.role === 'admin' && (
+              <Link to="/admin/create-notam" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', padding: '0.45rem 1rem' }}>
+                <Plus size={15} /> Buat NOTAM Baru
+              </Link>
+            )}
           </div>
           
           <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', width: '320px' }}>
@@ -554,13 +667,24 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
                           </span>
                         </td>
                         <td>
-                          <button
-                            className="btn btn-secondary"
-                            style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
-                            onClick={(e) => { e.stopPropagation(); setSelectedNotam(notam); }}
-                          >
-                            Lihat PDF
-                          </button>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button
+                              className="btn btn-secondary"
+                              style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
+                              onClick={(e) => { e.stopPropagation(); setSelectedNotam(notam); }}
+                            >
+                              Lihat PDF
+                            </button>
+                            {user?.role === 'admin' && (
+                              <button
+                                className="btn"
+                                style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                                onClick={(e) => { e.stopPropagation(); handleDeleteNotam(notam.id, e); }}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -574,15 +698,51 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
 
       {/* ── BRIEFING TAB ─────────────────────────── */}
       {mainTab === 'briefing' && (
+        <>
+        <ShiftStats data={briefings} />
         <div className="card" style={{ borderRadius: '8px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
             <h3 style={{ margin: 0, fontSize: '1.1rem' }}>
               Daftar Pre-Shift Briefing
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'normal', marginLeft: 8 }}>({briefings.length} dokumen)</span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'normal', marginLeft: 8 }}>({filteredBriefings.length} dokumen)</span>
             </h3>
-            <Link to="/admin/create-briefing" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', padding: '0.45rem 1rem' }}>
-              <Plus size={15} /> Buat Briefing Baru
-            </Link>
+            {user?.role === 'admin' && (
+              <Link to="/admin/create-briefing" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', padding: '0.45rem 1rem' }}>
+                <Plus size={15} /> Buat Briefing Baru
+              </Link>
+            )}
+          </div>
+          
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', width: '100%', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: '220px' }}>
+              <CustomSelect
+                value={briefingShiftFilter}
+                onChange={setBriefingShiftFilter}
+                placeholder="Semua Shift"
+                options={[
+                  { value: 'all', label: 'Semua Shift' },
+                  { value: 'PAGI', label: 'Pagi' },
+                  { value: 'SIANG', label: 'Siang' },
+                  { value: 'MALAM', label: 'Malam' }
+                ]}
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: '220px' }}>
+              <CustomSelect
+                value={briefingIncomingFilter}
+                onChange={setBriefingIncomingFilter}
+                placeholder="Semua Incoming Manager"
+                options={incomingOptions}
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: '220px' }}>
+              <CustomSelect
+                value={briefingOutgoingFilter}
+                onChange={setBriefingOutgoingFilter}
+                placeholder="Semua Outgoing Manager"
+                options={outgoingOptions}
+              />
+            </div>
           </div>
 
           {briefings.length === 0 ? (
@@ -604,7 +764,7 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {briefings.map(b => (
+                  {filteredBriefings.map(b => (
                     <tr key={b.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedBriefing(b)}>
                       <td style={{ fontWeight: 600 }}>{b.date}</td>
                       <td>{b.time}</td>
@@ -628,13 +788,15 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
                           >
                             Lihat PDF
                           </button>
-                          <button
-                            className="btn"
-                            style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer' }}
-                            onClick={(e) => handleDeleteBriefing(b.id, e)}
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                          {user?.role === 'admin' && (
+                            <button
+                              className="btn"
+                              style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                              onClick={(e) => handleDeleteBriefing(b.id, e)}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -644,19 +806,56 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
             </div>
           )}
         </div>
+        </>
       )}
 
       {/* ── POST-SHIFT TAB ─────────────────────────── */}
       {mainTab === 'postshift' && (
+        <>
+        <ShiftStats data={postshifts} />
         <div className="card" style={{ borderRadius: '8px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
             <h3 style={{ margin: 0, fontSize: '1.1rem' }}>
               Daftar Post-Shift Review
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'normal', marginLeft: 8 }}>({postshifts.length} dokumen)</span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'normal', marginLeft: 8 }}>({filteredPostshifts.length} dokumen)</span>
             </h3>
-            <Link to="/admin/create-postshift" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', padding: '0.45rem 1rem' }}>
-              <Plus size={15} /> Buat Post-Shift Baru
-            </Link>
+            {user?.role === 'admin' && (
+              <Link to="/admin/create-postshift" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', padding: '0.45rem 1rem' }}>
+                <Plus size={15} /> Buat Post-Shift Baru
+              </Link>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', width: '100%', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: '220px' }}>
+              <CustomSelect
+                value={postshiftShiftFilter}
+                onChange={setPostshiftShiftFilter}
+                placeholder="Semua Shift"
+                options={[
+                  { value: 'all', label: 'Semua Shift' },
+                  { value: 'PAGI', label: 'Pagi' },
+                  { value: 'SIANG', label: 'Siang' },
+                  { value: 'MALAM', label: 'Malam' }
+                ]}
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: '220px' }}>
+              <CustomSelect
+                value={postshiftIncomingFilter}
+                onChange={setPostshiftIncomingFilter}
+                placeholder="Semua Incoming Manager"
+                options={incomingOptions}
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: '220px' }}>
+              <CustomSelect
+                value={postshiftOutgoingFilter}
+                onChange={setPostshiftOutgoingFilter}
+                placeholder="Semua Outgoing Manager"
+                options={outgoingOptions}
+              />
+            </div>
           </div>
 
           {postshifts.length === 0 ? (
@@ -678,7 +877,7 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {postshifts.map(p => (
+                  {filteredPostshifts.map(p => (
                     <tr key={p.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedPostShift(p)}>
                       <td style={{ fontWeight: 600 }}>{p.date}</td>
                       <td>{p.time}</td>
@@ -702,13 +901,15 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
                           >
                             Lihat PDF
                           </button>
-                          <button
-                            className="btn"
-                            style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer' }}
-                            onClick={(e) => handleDeletePostShift(p.id, e)}
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                          {user?.role === 'admin' && (
+                            <button
+                              className="btn"
+                              style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                              onClick={(e) => handleDeletePostShift(p.id, e)}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -718,6 +919,101 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
             </div>
           )}
         </div>
+        </>
+      )}
+
+      {/* ── PREDUTY TAB CONTENT ──────────────────────────── */}
+      {mainTab === 'preduty' && (
+        <>
+        <ShiftStats data={preduties} />
+        <div className="card" style={{ borderRadius: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>
+              Daftar Preduty Briefing
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'normal', marginLeft: 8 }}>({filteredPreduties.length} dokumen)</span>
+            </h3>
+            {user?.role === 'admin' && (
+              <Link to="/admin/create-preduty" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', padding: '0.45rem 1rem' }}>
+                <Plus size={15} /> Buat Preduty Baru
+              </Link>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', width: '100%', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: '220px' }}>
+              <CustomSelect
+                value={predutyShiftFilter}
+                onChange={setPredutyShiftFilter}
+                placeholder="Semua Shift"
+                options={[
+                  { value: 'all', label: 'Semua Shift' },
+                  { value: 'PAGI', label: 'Pagi' },
+                  { value: 'SIANG', label: 'Siang' },
+                  { value: 'MALAM', label: 'Malam' }
+                ]}
+              />
+            </div>
+          </div>
+
+          {preduties.length === 0 ? (
+            <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+              <CheckSquare size={40} style={{ opacity: 0.15, marginBottom: '0.5rem' }} />
+              <p>Belum ada Preduty Briefing Checklist.</p>
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Tanggal</th>
+                    <th>Waktu</th>
+                    <th>Shift</th>
+                    <th>Manager/Supervisor</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPreduties.map(p => (
+                    <tr key={p.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedPreduty(p)}>
+                      <td style={{ fontWeight: 600 }}>{p.date}</td>
+                      <td>{p.time}</td>
+                      <td>
+                        <span className="badge badge-blue" style={{ fontSize: '0.72rem' }}>{p.shift}</span>
+                      </td>
+                      <td>
+                        <div style={{ fontSize: '0.85rem' }}>{p.managerOnDutyInfo?.nama || p.managerOnDuty}</div>
+                        {p.managerOnDutyInfo?.nama && (
+                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{p.managerOnDuty}</div>
+                        )}
+                      </td>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button
+                            className="btn btn-secondary"
+                            style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
+                            onClick={(e) => { e.stopPropagation(); setSelectedPreduty(p); }}
+                          >
+                            Lihat PDF
+                          </button>
+                          {user?.role === 'admin' && (
+                            <button
+                              className="btn"
+                              style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                              onClick={(e) => handleDeletePreduty(p.id, e)}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+        </>
       )}
 
       {/* ── CALENDAR TAB CONTENT ──────────────────────────── */}
@@ -733,6 +1029,9 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
       )}
       {selectedPostShift && (
         <PostShiftViewerModal postshift={selectedPostShift} onClose={() => setSelectedPostShift(null)} />
+      )}
+      {selectedPreduty && (
+        <PredutyViewerModal preduty={selectedPreduty} onClose={() => setSelectedPreduty(null)} />
       )}
     </div>
   );
