@@ -88,19 +88,21 @@ export default function Login() {
         }} className="hide-on-mobile">
           <div style={{
             position: 'absolute', inset: 0,
-            background: 'linear-gradient(135deg, rgba(109, 40, 217, 0.5) 0%, rgba(30, 58, 138, 0.85) 100%)',
+            background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.6) 0%, rgba(30, 58, 138, 0.85) 100%)',
             zIndex: 1
           }}></div>
           
           {/* Top Left Logo */}
           <div style={{ position: 'absolute', top: '2.5rem', left: '2.5rem', zIndex: 2, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <img src="/logo.png" alt="AirNav Logo" style={{ width: '45px', height: '45px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+            <div style={{ background: 'white', padding: '0.25rem', borderRadius: '8px', display: 'flex' }}>
+              <img src="/logo.png" alt="AirNav Logo" style={{ width: '45px', height: '45px', objectFit: 'contain' }} />
+            </div>
             <span style={{ color: 'white', fontWeight: 800, fontSize: '1.5rem', letterSpacing: '0.5px' }}>AirNav</span>
           </div>
 
           <div style={{ position: 'relative', zIndex: 2, color: 'white', maxWidth: '450px' }}>
             <h1 style={{ fontSize: '4.5rem', fontWeight: 800, lineHeight: 1.05, marginBottom: '1.5rem', textShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
-              Welcome<br/>Back!
+              Welcome<br/>to SIMO
             </h1>
             <p style={{ fontSize: '1.15rem', opacity: 0.9, lineHeight: 1.6, textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
               Sistem Informasi Manajemen Operasi<br/>
@@ -120,8 +122,8 @@ export default function Login() {
           backgroundColor: '#ffffff'
         }}>
           <div style={{ width: '100%', maxWidth: '380px' }}>
-            <h2 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#1e293b', marginBottom: '0.5rem' }}>Login</h2>
-            <p style={{ color: '#94a3b8', fontSize: '0.95rem', marginBottom: '2.5rem' }}>
+            <h2 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#000000', marginBottom: '0.5rem' }}>Login</h2>
+            <p style={{ color: '#000000', fontSize: '0.95rem', marginBottom: '2.5rem' }}>
               Welcome back! Please login to your account.
             </p>
 
@@ -137,7 +139,7 @@ export default function Login() {
 
             <form onSubmit={handleSubmit}>
               <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', color: '#cbd5e1', fontSize: '0.85rem', marginBottom: '0.5rem', fontWeight: 500 }}>User Name / Initial</label>
+                <label style={{ display: 'block', color: '#000000', fontSize: '0.85rem', marginBottom: '0.5rem', fontWeight: 500 }}>User Name / Initial</label>
                 <input
                   type="text"
                   value={username}
@@ -148,13 +150,13 @@ export default function Login() {
                     border: '1px solid #e2e8f0', outline: 'none', transition: 'border-color 0.2s',
                     fontSize: '0.95rem', color: '#1e293b'
                   }}
-                  onFocus={(e) => e.target.style.borderColor = '#8b5cf6'}
+                  onFocus={(e) => e.target.style.borderColor = '#2563eb'}
                   onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                 />
               </div>
 
               <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', color: '#cbd5e1', fontSize: '0.85rem', marginBottom: '0.5rem', fontWeight: 500 }}>Password</label>
+                <label style={{ display: 'block', color: '#000000', fontSize: '0.85rem', marginBottom: '0.5rem', fontWeight: 500 }}>Password</label>
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
@@ -165,7 +167,7 @@ export default function Login() {
                     border: '1px solid #e2e8f0', outline: 'none', transition: 'border-color 0.2s',
                     fontSize: '0.95rem', color: '#1e293b', letterSpacing: showPassword ? 'normal' : '0.2em'
                   }}
-                  onFocus={(e) => e.target.style.borderColor = '#8b5cf6'}
+                  onFocus={(e) => e.target.style.borderColor = '#2563eb'}
                   onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                 />
               </div>
@@ -174,8 +176,8 @@ export default function Login() {
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                   <div style={{ 
                     width: 18, height: 18, borderRadius: 4, 
-                    background: showPassword ? '#8b5cf6' : 'white',
-                    border: `1px solid ${showPassword ? '#8b5cf6' : '#cbd5e1'}`,
+                    background: showPassword ? '#2563eb' : 'white',
+                    border: `1px solid ${showPassword ? '#2563eb' : '#cbd5e1'}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     transition: 'all 0.2s'
                   }}>
@@ -187,7 +189,7 @@ export default function Login() {
                     onChange={() => setShowPassword(!showPassword)}
                     style={{ display: 'none' }}
                   />
-                  <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 500 }}>Show Password</span>
+                  <span style={{ fontSize: '0.85rem', color: '#000000', fontWeight: 500 }}>Show Password</span>
                 </label>
 
                 <button 
@@ -198,20 +200,20 @@ export default function Login() {
                     setPwdError('');
                     setPwdSuccess('');
                   }}
-                  style={{ background: 'none', border: 'none', color: '#cbd5e1', fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
+                  style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '0.85rem', cursor: 'pointer', padding: 0, fontWeight: 500 }}
                 >
                   Ganti Password?
                 </button>
               </div>
 
               <button type="submit" style={{
-                width: '100%', padding: '0.875rem', background: '#8b5cf6', color: 'white',
+                width: '100%', padding: '0.875rem', background: '#2563eb', color: 'white',
                 border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: 600,
                 cursor: 'pointer', transition: 'background 0.2s',
-                boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)'
+                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
               }}
-              onMouseOver={(e) => e.target.style.background = '#7c3aed'}
-              onMouseOut={(e) => e.target.style.background = '#8b5cf6'}
+              onMouseOver={(e) => e.target.style.background = '#1d4ed8'}
+              onMouseOut={(e) => e.target.style.background = '#2563eb'}
               >
                 Login
               </button>
