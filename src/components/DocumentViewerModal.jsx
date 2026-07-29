@@ -1,19 +1,27 @@
 import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import generatePdf from '../utils/pdfGenerator';
-import BriefingTemplate from './BriefingTemplate';
 import { X, Download } from 'lucide-react';
 
-export default function BriefingViewerModal({ briefing, onClose }) {
+/**
+ * Generic Document Viewer Modal
+ * Replaces PredutyViewerModal, BriefingViewerModal, and PostShiftViewerModal
+ * 
+ * @param {string} title - Modal title (e.g. "Preduty Briefing")
+ * @param {string} subtitle - Modal subtitle (e.g. "2026-07-29 — 10:20")
+ * @param {string} exportFilename - PDF export filename
+ * @param {React.ComponentType} TemplateComponent - The template component to render (e.g. PredutyTemplate)
+ * @param {object} templateProps - Props to pass to the template component (e.g. { preduty: data })
+ * @param {function} onClose - Close handler
+ */
+export default function DocumentViewerModal({ title, subtitle, exportFilename, TemplateComponent, templateProps, onClose }) {
   const templateRef = useRef();
   const [exporting, setExporting] = useState(false);
-
-  if (!briefing) return null;
 
   const handleExportPDF = async () => {
     setExporting(true);
     try {
-      await generatePdf(templateRef.current, `Pre-Shift_Briefing_${briefing.date?.replace(/ /g,'_')}.pdf`);
+      await generatePdf(templateRef.current, exportFilename);
     } catch (err) {
       console.error('PDF export error:', err);
     } finally {
@@ -41,10 +49,10 @@ export default function BriefingViewerModal({ briefing, onClose }) {
         }}>
           <div>
             <div style={{ fontWeight: 700, fontSize: '1rem', color: '#1e293b' }}>
-              Pre-Shift Briefing Checklist
+              {title}
             </div>
             <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-              {briefing.date} — Shift {briefing.shift} — {briefing.time}
+              {subtitle}
             </div>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -77,7 +85,7 @@ export default function BriefingViewerModal({ briefing, onClose }) {
         {/* Modal Body — Scrollable preview */}
         <div style={{ overflow: 'auto', flex: 1, padding: '1rem', background: '#f8fafc', display: 'flex', justifyContent: 'center' }}>
           <div style={{ background: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-            <BriefingTemplate ref={templateRef} briefing={briefing} />
+            <TemplateComponent ref={templateRef} {...templateProps} />
           </div>
         </div>
       </div>
