@@ -102,11 +102,11 @@ export default function Login() {
             <span style={{ color: 'white', fontWeight: 800, fontSize: '1.5rem', letterSpacing: '0.5px' }}>AirNav</span>
           </div>
 
-          <div style={{ position: 'relative', zIndex: 2, color: 'white', maxWidth: '450px' }}>
-            <h1 style={{ fontSize: '4.5rem', fontWeight: 800, lineHeight: 1.05, marginBottom: '1.5rem', textShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+          <div style={{ position: 'relative', zIndex: 2, maxWidth: '450px' }}>
+            <h1 style={{ color: '#ffffff', fontSize: '4.5rem', fontWeight: 800, lineHeight: 1.05, marginBottom: '1.5rem', textShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
               Welcome<br/>to SIMO
             </h1>
-            <p style={{ fontSize: '1.15rem', opacity: 0.9, lineHeight: 1.6, textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+            <p style={{ color: '#ffffff', fontSize: '1.15rem', opacity: 0.9, lineHeight: 1.6, textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
               Sistem Informasi Manajemen Operasi<br/>
               AirNav Cabang Surabaya
             </p>
