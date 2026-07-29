@@ -102,11 +102,28 @@ export default function Login() {
             <span style={{ color: 'white', fontWeight: 800, fontSize: '1.5rem', letterSpacing: '0.5px' }}>AirNav</span>
           </div>
 
-          <div style={{ position: 'relative', zIndex: 2, maxWidth: '450px' }}>
-            <h1 style={{ color: '#ffffff', fontSize: '4.5rem', fontWeight: 800, lineHeight: 1.05, marginBottom: '1.5rem', textShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+          <div style={{ position: 'relative', zIndex: 2, maxWidth: '500px', paddingLeft: '1rem' }}>
+            <h1 style={{ 
+              color: '#ffffff', 
+              fontSize: '4.25rem', 
+              fontWeight: 800, 
+              lineHeight: 1.15, 
+              marginBottom: '1.25rem', 
+              letterSpacing: '-1px',
+              textShadow: '0 4px 20px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4)' 
+            }}>
               Welcome<br/>to SIMO
             </h1>
-            <p style={{ color: '#ffffff', fontSize: '1.15rem', opacity: 0.9, lineHeight: 1.6, textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+            <div style={{ width: '80px', height: '5px', backgroundColor: '#2563eb', marginBottom: '1.5rem', borderRadius: '4px', boxShadow: '0 2px 4px rgba(0,0,0,0.3)' }}></div>
+            <p style={{ 
+              color: '#ffffff', 
+              fontSize: '1.25rem', 
+              fontWeight: 500,
+              opacity: 0.95, 
+              lineHeight: 1.6, 
+              letterSpacing: '0.5px',
+              textShadow: '0 2px 10px rgba(0,0,0,0.5)' 
+            }}>
               Sistem Informasi Manajemen Operasi<br/>
               AirNav Cabang Surabaya
             </p>
