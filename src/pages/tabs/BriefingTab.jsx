@@ -105,7 +105,7 @@ export default function BriefingTab({ briefings, incomingOptions, outgoingOption
                       <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{b.outgoingManager?.initial}</div>
                     </td>
                     <td style={{ whiteSpace: 'nowrap' }}>
-                      <div style={{ display: 'flex', gap: 6 }}>
+                      <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
                         <button
                           className="btn btn-secondary"
                           style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}

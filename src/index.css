@@ -522,7 +522,7 @@ a {
 }
 .data-table th, .data-table td {
   padding: 1rem;
-  text-align: left;
+  text-align: center;
   border-bottom: 1px solid #e2e8f0;
 }
 .data-table th {

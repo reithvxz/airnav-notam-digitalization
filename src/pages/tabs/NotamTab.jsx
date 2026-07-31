@@ -175,7 +175,7 @@ export default function NotamTab({ notams, deleteNotam, selectedNotam, setSelect
                         </span>
                       </td>
                       <td>
-                        <div style={{ display: 'flex', gap: 6 }}>
+                        <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
                           <button
                             className="btn btn-secondary"
                             style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}

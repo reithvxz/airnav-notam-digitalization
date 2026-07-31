@@ -59,11 +59,11 @@ export default function PredutyTab({ preduties, selectedPreduty, setSelectedPred
             <table className="data-table">
               <thead>
                 <tr>
-                  <th style={{ textAlign: 'center' }}>Tanggal</th>
-                  <th style={{ textAlign: 'center' }}>Waktu</th>
-                  <th style={{ textAlign: 'center' }}>Shift</th>
-                  <th style={{ textAlign: 'center' }}>Manager/Supervisor</th>
-                  <th style={{ textAlign: 'center' }}>Aksi</th>
+                  <th>Tanggal</th>
+                  <th>Waktu</th>
+                  <th>Shift</th>
+                  <th>Manager/Supervisor</th>
+                  <th>Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -81,7 +81,7 @@ export default function PredutyTab({ preduties, selectedPreduty, setSelectedPred
                       )}
                     </td>
                     <td style={{ whiteSpace: 'nowrap' }}>
-                      <div style={{ display: 'flex', gap: 6 }}>
+                      <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
                         <button
                           className="btn btn-secondary"
                           style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
