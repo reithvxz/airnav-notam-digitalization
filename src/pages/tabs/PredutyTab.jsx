@@ -90,13 +90,24 @@ export default function PredutyTab({ preduties, selectedPreduty, setSelectedPred
                           Lihat PDF
                         </button>
                         {user?.role === 'admin' && (
-                          <button
-                            className="btn"
-                            style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer' }}
-                            onClick={(e) => onDelete(p.id, e)}
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                          <>
+                            <Link
+                              to="/admin/create-preduty"
+                              state={{ preduty: p }}
+                              className="btn btn-primary"
+                              style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              Edit
+                            </Link>
+                            <button
+                              className="btn"
+                              style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                              onClick={(e) => onDelete(p.id, e)}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Save, ArrowLeft, Plus, Trash2, CheckSquare, Image as ImageIcon } from 'lucide-react';
 import { CustomDatePicker, CustomTimePicker, CustomSelect } from '../components/CustomPickers';
@@ -74,32 +74,48 @@ function ImageUpload({ label, value, onChange }) {
 
 export default function CreatePreduty() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const editData = location.state?.preduty;
   
   const now = new Date();
   const initTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-  const [time, setTime] = useState(initTime);
-  const [shift, setShift] = useState('PAGI');
   
-  const [personelImage, setPersonelImage] = useState(null);
+  // Format the date properly for the date picker (YYYY-MM-DD) if editData has it in another format (like DD/MM/YYYY or DD MMM YYYY).
+  // Assuming date in editData might be a string, let's keep it simple or use it directly. 
+  // If it fails to parse, fallback to today. The input type="date" expects YYYY-MM-DD.
+  const parseDateForInput = (dStr) => {
+    if (!dStr) return new Date().toISOString().split('T')[0];
+    // If it's already YYYY-MM-DD
+    if (dStr.match(/^\d{4}-\d{2}-\d{2}$/)) return dStr;
+    // Attempt standard JS parse
+    const d = new Date(dStr);
+    if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+    return new Date().toISOString().split('T')[0];
+  };
+
+  const [date, setDate] = useState(editData ? parseDateForInput(editData.date) : new Date().toISOString().split('T')[0]);
+  const [time, setTime] = useState(editData?.time || initTime);
+  const [shift, setShift] = useState(editData?.shift || 'PAGI');
   
-  const [fasilitas, setFasilitas] = useState([
+  const [personelImage, setPersonelImage] = useState(editData?.personelImage || null);
+  
+  const [fasilitas, setFasilitas] = useState(editData?.fasilitas || [
     { subject: 'COMMUNICATION', status: 'NORMAL', remarks: '' },
     { subject: 'NAVIGATION', status: 'NORMAL', remarks: '' },
     { subject: 'AUTOMATION', status: 'NORMAL', remarks: '' },
     { subject: 'SUPPORT', status: 'NORMAL', remarks: '' }
   ]);
   
-  const [notamText, setNotamText] = useState('');
-  const [trafficImage, setTrafficImage] = useState(null);
-  const [weatherImage, setWeatherImage] = useState(null);
+  const [notamText, setNotamText] = useState(editData?.notamText || '');
+  const [trafficImage, setTrafficImage] = useState(editData?.trafficImage || null);
+  const [weatherImage, setWeatherImage] = useState(editData?.weatherImage || null);
   
-  const [others, setOthers] = useState([]);
+  const [others, setOthers] = useState(editData?.others || []);
   
-  const [reminderText, setReminderText] = useState('');
-  const [instructionText, setInstructionText] = useState('');
+  const [reminderText, setReminderText] = useState(editData?.reminderText || '');
+  const [instructionText, setInstructionText] = useState(editData?.instructionText || '');
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
