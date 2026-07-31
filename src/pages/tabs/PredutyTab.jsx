@@ -59,11 +59,11 @@ export default function PredutyTab({ preduties, selectedPreduty, setSelectedPred
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Tanggal</th>
-                  <th>Waktu</th>
-                  <th>Shift</th>
-                  <th>Manager/Supervisor</th>
-                  <th>Aksi</th>
+                  <th style={{ textAlign: 'center' }}>Tanggal</th>
+                  <th style={{ textAlign: 'center' }}>Waktu</th>
+                  <th style={{ textAlign: 'center' }}>Shift</th>
+                  <th style={{ textAlign: 'center' }}>Manager/Supervisor</th>
+                  <th style={{ textAlign: 'center' }}>Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -90,24 +90,15 @@ export default function PredutyTab({ preduties, selectedPreduty, setSelectedPred
                           Lihat PDF
                         </button>
                         {user?.role === 'admin' && (
-                          <>
-                            <Link
-                              to="/admin/create-preduty"
-                              state={{ preduty: p }}
-                              className="btn btn-primary"
-                              style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              Edit
-                            </Link>
-                            <button
-                              className="btn"
-                              style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer' }}
-                              onClick={(e) => onDelete(p.id, e)}
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </>
+                          <Link
+                            to="/admin/create-preduty"
+                            state={{ preduty: p }}
+                            className="btn btn-primary"
+                            style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Edit
+                          </Link>
                         )}
                       </div>
                     </td>
