@@ -239,7 +239,7 @@ export default function Layout() {
       <main className="main-content" style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ paddingBottom: '1.25rem', borderBottom: '1px solid #e2e8f0', marginBottom: '1.5rem', textAlign: 'left' }}>
           <h1 style={{ margin: 0, fontSize: '1.75rem', color: '#1e3a8a', fontWeight: 800, letterSpacing: '-0.5px' }}>SIMO AirNav Cabang Surabaya</h1>
-          <p style={{ margin: '0.25rem 0 0', color: '#64748b', fontSize: '0.9rem', fontWeight: 500 }}>Sistem Informasi Manajemen Operasi</p>
+          <p style={{ margin: '0.25rem 0 0', color: '#64748b', fontSize: '0.9rem', fontWeight: 500 }}>Sistem Informasi Manager Operasi</p>
         </div>
         <div style={{ flex: 1, overflowY: 'auto' }}>
           <Outlet />

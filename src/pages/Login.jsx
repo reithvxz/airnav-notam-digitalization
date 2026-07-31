@@ -124,7 +124,7 @@ export default function Login() {
               letterSpacing: '0.5px',
               textShadow: '0 2px 10px rgba(0,0,0,0.5)' 
             }}>
-              Sistem Informasi Manajemen Operasi<br/>
+              Sistem Informasi Manager Operasi<br/>
               AirNav Cabang Surabaya
             </p>
           </div>
