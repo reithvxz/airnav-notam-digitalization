@@ -882,6 +882,41 @@ a {
     gap: 1rem;
   }
   
+  /* Shrink Hero Headers */
+  .page-header {
+    padding: 1rem !important;
+    margin-bottom: 1.25rem !important;
+  }
+  .page-title {
+    font-size: 1.35rem !important;
+  }
+  .page-subtitle {
+    font-size: 0.85rem !important;
+  }
+
+  /* Shrink Calendar elements */
+  .fc .fc-toolbar-title {
+    font-size: 1.1rem !important;
+  }
+  .fc .fc-button {
+    padding: 0.3em 0.5em !important;
+    font-size: 0.85rem !important;
+  }
+  .fc .fc-toolbar {
+    gap: 5px !important;
+  }
+  .fc th {
+    font-size: 0.75rem !important;
+    padding: 0.3em !important;
+  }
+  .fc .fc-daygrid-day-number {
+    font-size: 0.75rem !important;
+  }
+  .fc .fc-day-today .fc-daygrid-day-number {
+    width: 24px !important;
+    height: 24px !important;
+  }
+  
   .tab-header {
     flex-direction: column;
     align-items: stretch;

@@ -104,9 +104,9 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
   return (
     <div>
       {/* Header */}
-      <div className="page-header" style={{ display: 'block', borderRadius: '12px', textAlign: 'center', background: '#eff6ff', border: '1px solid #bfdbfe', padding: '1.5rem', marginBottom: '2rem' }}>
+      <div className="page-header">
         <div>
-          <h1 className="page-title" style={{ fontSize: '1.8rem', color: '#1e3a8a', margin: '0 0 0.5rem 0' }}>
+          <h1 className="page-title">
             {mainTab === 'overview' && 'Overview'}
             {mainTab === 'notam' && 'NOTAM'}
             {mainTab === 'briefing' && 'Pre-Shift'}
@@ -114,7 +114,7 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
             {mainTab === 'preduty' && 'Preduty'}
             {mainTab === 'calendar' && 'Calendar'}
           </h1>
-          <p className="page-subtitle" style={{ fontSize: '0.95rem', color: '#3b82f6', margin: 0, fontWeight: 500 }}>
+          <p className="page-subtitle">
             {mainTab === 'overview' && 'Ringkasan seluruh data operasional AirNav cabang Surabaya.'}
             {mainTab === 'notam' && 'Manajemen dan daftar penerbitan dokumen NOTAM.'}
             {mainTab === 'briefing' && 'Checklist persiapan sebelum pergantian shift dimulai.'}
