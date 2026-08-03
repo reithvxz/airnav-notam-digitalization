@@ -7,7 +7,7 @@ import {
   LayoutDashboard, FileText, CheckSquare, 
   LogOut, User, Key, Users, Settings, 
   Bell, Activity, Calendar as CalendarIcon, Clock,
-  ChevronRight, ChevronLeft, Menu, ClipboardCheck, Briefcase
+  ChevronRight, ChevronLeft, Menu, ClipboardCheck, Briefcase, X
 } from 'lucide-react';
 import Chatbot from './Chatbot';
 
@@ -25,6 +25,7 @@ export default function Layout() {
   const [pwdSuccess, setPwdSuccess] = useState('');
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [extraActivities, setExtraActivities] = useState([]);
 
   useEffect(() => {
@@ -123,8 +124,14 @@ export default function Layout() {
   return (
     <div className={`app-container ${!isSidebarOpen ? 'collapsed' : ''}`}>
       
+      {/* MOBILE OVERLAY */}
+      <div 
+        className={`mobile-overlay ${isMobileSidebarOpen ? 'active' : ''}`} 
+        onClick={() => setIsMobileSidebarOpen(false)} 
+      />
+
       {/* 1. LEFT SIDEBAR */}
-      <aside className="left-sidebar">
+      <aside className={`left-sidebar ${isMobileSidebarOpen ? 'mobile-open' : ''}`}>
         <div style={{ padding: isSidebarOpen ? '1.25rem 1.5rem' : '1.25rem 0.5rem', display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'space-between' : 'center', borderBottom: '1px solid #e2e8f0', marginBottom: '1.5rem' }}>
           {isSidebarOpen ? (
             <>
@@ -134,12 +141,23 @@ export default function Layout() {
               </div>
               <button 
                 onClick={() => setIsSidebarOpen(false)}
+                className="desktop-only-btn"
                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', padding: '4px', borderRadius: '6px' }}
                 onMouseOver={(e) => e.currentTarget.style.background = '#f1f5f9'}
                 onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
               >
                 <Menu size={20} />
               </button>
+              {/* Mobile Close Button */}
+              <button 
+                onClick={() => setIsMobileSidebarOpen(false)}
+                className="mobile-only-btn"
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#ef4444', display: 'none', alignItems: 'center', padding: '4px', borderRadius: '6px' }}
+              >
+                <X size={24} />
+              </button>
+
+
             </>
           ) : (
             <div 
@@ -237,7 +255,19 @@ export default function Layout() {
 
       {/* 2. CENTER CONTENT */}
       <main className="main-content" style={{ display: 'flex', flexDirection: 'column' }}>
-        <div style={{ paddingBottom: '1.25rem', borderBottom: '1px solid #e2e8f0', marginBottom: '1.5rem', textAlign: 'left' }}>
+        
+        {/* MOBILE HEADER */}
+        <div className="mobile-header" style={{ display: 'none', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1rem', borderBottom: '1px solid #e2e8f0', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <img src="/logo.png" alt="AirNav Logo" style={{ height: '28px' }} />
+            <span style={{ fontWeight: 800, color: '#1e3a8a', fontSize: '1.1rem' }}>AirNav</span>
+          </div>
+          <button onClick={() => setIsMobileSidebarOpen(true)} style={{ background: 'transparent', border: 'none', color: '#1e3a8a' }}>
+            <Menu size={26} />
+          </button>
+        </div>
+
+        <div className="desktop-header" style={{ paddingBottom: '1.25rem', borderBottom: '1px solid #e2e8f0', marginBottom: '1.5rem', textAlign: 'left' }}>
           <h1 style={{ margin: 0, fontSize: '1.75rem', color: '#1e3a8a', fontWeight: 800, letterSpacing: '-0.5px' }}>SIMO AirNav Cabang Surabaya</h1>
           <p style={{ margin: '0.25rem 0 0', color: '#64748b', fontSize: '0.9rem', fontWeight: 500 }}>Sistem Informasi Manager Operasi</p>
         </div>

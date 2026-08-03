@@ -122,6 +122,8 @@ a {
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
   padding: 1.5rem;
   transition: box-shadow 0.2s, transform 0.2s;
+  min-width: 0;
+  max-width: 100%;
 }
 .card:hover {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0,0,0,0.02);
@@ -785,7 +787,17 @@ a {
     grid-template-columns: 1fr;
   }
   .left-sidebar {
-    display: none; /* Consider adding a mobile hamburger menu to toggle this */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    height: 100vh;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+  }
+  .left-sidebar.mobile-open {
+    transform: translateX(0);
   }
   .right-sidebar {
     display: none;
@@ -881,8 +893,41 @@ a {
     justify-content: center;
   }
   
+  .desktop-only-btn {
+    display: none !important;
+  }
+  
+  .mobile-only-btn {
+    display: flex !important;
+  }
+  
+  .desktop-header {
+    display: none !important;
+  }
+  
+  .mobile-header {
+    display: flex !important;
+  }
+  
   /* Extra space at bottom to prevent floating chat bot overlapping content */
   .main-content {
     padding-bottom: 5rem; 
   }
+}
+
+.mobile-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.5);
+  z-index: 999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
+}
+.mobile-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
 }
