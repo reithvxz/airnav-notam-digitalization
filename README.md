@@ -94,3 +94,14 @@ Pastikan kamu sudah menginstal [Node.js](https://nodejs.org/) dan **XAMPP (MySQL
    npm run dev
    # Akses web di http://localhost:5173
    ```
+
+6. **Login Akun Default:**
+   Setelah melakukan *seed data*, Anda dapat masuk ke sistem menggunakan salah satu akun Admin/Manager default berikut:
+   - **Username/Initial:** `DY`
+   - **Password:** `admin`
+   - (Tersedia juga initial manager lain seperti `IB`, `YD`, dll. dengan password yang sama `admin`).
+
+> [!NOTE]
+> **Catatan Keamanan (Untuk IT):** 
+> 1. Secara default, kode ini menggunakan koneksi MySQL ke `localhost` dengan *username* `root` dan *password* kosong (`''`), yang merupakan standar *default* bawaan instalasi XAMPP.
+> 2. Sistem *Login* saat ini dioptimalkan untuk penggunaan internal intranet kantor (tidak menggunakan *hashing* bcrypt/JWT) demi kepraktisan penerapan lokal (Local Area Network). Jika aplikasi ini akan di-hosting secara publik (Internet), disarankan untuk mengenkripsi password dan menggunakan autentikasi berbasis Token/JWT.
