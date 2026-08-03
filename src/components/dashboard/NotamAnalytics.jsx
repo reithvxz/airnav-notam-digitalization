@@ -152,7 +152,7 @@ export default function NotamAnalytics({ notams }) {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+      <div className="chart-grid">
         
         {/* 1. Calendar Heatmap */}
         <div className="card">
@@ -160,21 +160,23 @@ export default function NotamAnalytics({ notams }) {
             <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Kepadatan Penerbitan Harian</h3>
             <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Calendar Heatmap</p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
-            {['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map(d => (
-              <div key={d} style={{ textAlign: 'center', fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>{d}</div>
-            ))}
-            {Array.from({ length: heatmapData.offset }).map((_, i) => <div key={`empty-${i}`} />)}
-            {heatmapData.counts.map((count, idx) => (
-              <div key={idx} style={{
-                aspectRatio: '1', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                backgroundColor: count === 0 ? '#f1f5f9' : `rgba(59, 130, 246, ${Math.min(count / 5 + 0.2, 1)})`,
-                color: count > 3 ? '#fff' : '#475569', fontSize: '0.8rem', fontWeight: 500,
-                cursor: 'pointer'
-              }} title={`${count} NOTAM diterbitkan`}>
-                {idx + 1}
-              </div>
-            ))}
+          <div style={{ width: '100%', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', minWidth: '300px' }}>
+              {['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map(d => (
+                <div key={d} style={{ textAlign: 'center', fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>{d}</div>
+              ))}
+              {Array.from({ length: heatmapData.offset }).map((_, i) => <div key={`empty-${i}`} />)}
+              {heatmapData.counts.map((count, idx) => (
+                <div key={idx} style={{
+                  aspectRatio: '1', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: count === 0 ? '#f1f5f9' : `rgba(59, 130, 246, ${Math.min(count / 5 + 0.2, 1)})`,
+                  color: count > 3 ? '#fff' : '#475569', fontSize: '0.8rem', fontWeight: 500,
+                  cursor: 'pointer'
+                }} title={`${count} NOTAM diterbitkan`}>
+                  {idx + 1}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 

@@ -113,21 +113,23 @@ export default function ShiftAnalytics({ briefings, postshifts }) {
   const renderCalendar = (title, counts, colorBase) => (
     <div className="card">
       <h3 style={{ margin: '0 0 1rem', fontSize: '1.1rem' }}>{title}</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', width: '100%', margin: '0 auto' }}>
-        {['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'].map(d => (
-          <div key={d} style={{ textAlign: 'center', fontSize: '0.7rem', color: '#64748b', fontWeight: 600, paddingBottom: '2px' }}>{d.substring(0,3)}</div>
-        ))}
-        {Array.from({ length: monthOffset }).map((_, i) => <div key={`empty-${i}`} />)}
-        {counts.map((count, idx) => (
-          <div key={idx} style={{
-            aspectRatio: '1', borderRadius: '4px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            backgroundColor: count === 0 ? '#f1f5f9' : colorBase(count),
-            color: count > 0 ? '#fff' : '#94a3b8', border: '1px solid transparent'
-          }}>
-            <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>{idx + 1}</span>
-            {count > 0 && <span style={{ fontSize: '0.6rem', opacity: 0.9 }}>{count}</span>}
-          </div>
-        ))}
+      <div style={{ width: '100%', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', minWidth: '300px', margin: '0 auto' }}>
+          {['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'].map(d => (
+            <div key={d} style={{ textAlign: 'center', fontSize: '0.7rem', color: '#64748b', fontWeight: 600, paddingBottom: '2px' }}>{d.substring(0,3)}</div>
+          ))}
+          {Array.from({ length: monthOffset }).map((_, i) => <div key={`empty-${i}`} />)}
+          {counts.map((count, idx) => (
+            <div key={idx} style={{
+              aspectRatio: '1', borderRadius: '4px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              backgroundColor: count === 0 ? '#f1f5f9' : colorBase(count),
+              color: count > 0 ? '#fff' : '#94a3b8', border: '1px solid transparent'
+            }}>
+              <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>{idx + 1}</span>
+              {count > 0 && <span style={{ fontSize: '0.6rem', opacity: 0.9 }}>{count}</span>}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -146,7 +148,7 @@ export default function ShiftAnalytics({ briefings, postshifts }) {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+      <div className="chart-grid">
         
         {/* NEW 0. Tren Pengajuan (Full Width) */}
         <div className="card" style={{ gridColumn: '1 / -1' }}>

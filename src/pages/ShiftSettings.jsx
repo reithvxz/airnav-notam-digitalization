@@ -117,7 +117,7 @@ export default function ShiftSettings() {
                 <Clock size={20} color={s.iconColor} />
                 <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: s.iconColor }}>{s.label}</h2>
               </div>
-              <div style={{ padding: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+              <div className="settings-grid" style={{ padding: '1.5rem' }}>
                 <CustomTimePicker
                   label="Waktu Briefing (UTC)"
                   value={shiftData.time}
