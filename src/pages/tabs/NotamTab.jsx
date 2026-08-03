@@ -74,7 +74,7 @@ export default function NotamTab({ notams, deleteNotam, selectedNotam, setSelect
   return (
     <>
       <div className="card" style={{ borderRadius: '8px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+        <div className="tab-header">
           <h3 style={{ margin: 0, fontSize: '1.1rem' }}>
             Daftar NOTAM <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'normal', marginLeft: 8 }}>({filteredNotams.length} dokumen)</span>
           </h3>
@@ -118,7 +118,7 @@ export default function NotamTab({ notams, deleteNotam, selectedNotam, setSelect
             <p>Belum ada NOTAM pada kategori ini.</p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-wrapper">
             <table className="data-table">
               <thead>
                 <tr>

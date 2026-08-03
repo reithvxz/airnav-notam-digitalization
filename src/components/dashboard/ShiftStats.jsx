@@ -6,7 +6,7 @@ const ShiftStats = ({ data }) => {
   const malam = data.filter(d => d.shift === 'MALAM').length;
   
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '1.5rem' }}>
+    <div className="stats-grid">
       <div className="stat-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <span className="stat-title">Total Dokumen</span>

@@ -828,3 +828,61 @@ a {
 .custom-month-picker::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
 }
+
+/* --- Responsive Helper Classes --- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.tab-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  gap: 1rem;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  border-radius: 8px; /* Optional for aesthetics */
+}
+
+/* Ensure table cells don't squish too much on mobile */
+.data-table th, .data-table td {
+  white-space: nowrap;
+}
+
+/* --- Mobile Media Queries --- */
+@media (max-width: 900px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr); /* 2 columns on tablet */
+  }
+}
+
+@media (max-width: 600px) {
+  .stats-grid {
+    grid-template-columns: 1fr; /* 1 column on mobile */
+    gap: 1rem;
+  }
+  
+  .tab-header {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+  }
+  
+  .tab-header .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  /* Extra space at bottom to prevent floating chat bot overlapping content */
+  .main-content {
+    padding-bottom: 5rem; 
+  }
+}
