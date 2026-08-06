@@ -18,7 +18,7 @@ export function EventReminderProvider({ children }) {
 
     const fetchEvents = async () => {
       try {
-        const res = await fetch('http://localhost:3000/api/events');
+        const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/events`);
         if (res.ok) {
           const data = await res.json();
           setEvents(data);
@@ -29,6 +29,8 @@ export function EventReminderProvider({ children }) {
     };
 
     fetchEvents();
+    // Expose fetchEvents to window for components to trigger, or better yet, return it in Provider
+    window.refreshReminders = fetchEvents;
     // Refresh events every 5 minutes in case another tab adds one
     const fetchInterval = setInterval(fetchEvents, 5 * 60 * 1000);
     return () => clearInterval(fetchInterval);
@@ -127,7 +129,7 @@ export function EventReminderProvider({ children }) {
   };
 
   return (
-    <EventReminderContext.Provider value={{ events }}>
+    <EventReminderContext.Provider value={{ events, refreshEvents: () => window.refreshReminders?.() }}>
       {children}
     </EventReminderContext.Provider>
   );

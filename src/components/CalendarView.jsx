@@ -4,8 +4,11 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
+import { CustomSelect } from './CustomPickers';
 import { useLocation } from 'react-router-dom';
-import { Plus, X, Calendar, MapPin, AlignLeft, Link as LinkIcon, Paperclip, Clock, Trash2, ChevronDown, Bell, AlertTriangle } from 'lucide-react';
+import { Plus, X, Calendar, MapPin, AlignLeft, Link as LinkIcon, Paperclip, Clock, Trash2, ChevronDown, Bell, AlertTriangle, CheckCircle, User as UserIcon } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useEventReminders } from '../context/EventReminderContext';
 
 const CATEGORY_COLORS = {
   Daily: '#3b82f6',       // Biru
@@ -16,8 +19,9 @@ const CATEGORY_COLORS = {
   Event: '#10b981',       // Hijau
   Other: '#ec4899'        // Pink vibrant
 };
-
 export default function CalendarView() {
+  const { user } = useAuth();
+  const { refreshEvents } = useEventReminders() || {};
   const [events, setEvents] = useState([]);
   const [holidays, setHolidays] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -34,7 +38,7 @@ export default function CalendarView() {
   const [eventToDelete, setEventToDelete] = useState(null);
   const [formData, setFormData] = useState({
     id: '', title: '', date: '', startTime: '', endTime: '', isAllDay: false,
-    category: 'Other', notes: '', location: '', url: '', attachment: ''
+    category: 'Other', notes: '', location: '', url: '', attachment: '', createdBy: '', isCompleted: false, completedBy: ''
   });
   const calendarRef = useRef(null);
   const location = useLocation();
@@ -60,10 +64,11 @@ export default function CalendarView() {
 
   const fetchEvents = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/events');
+      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/events`);
       const data = await res.json();
       if (Array.isArray(data)) {
         setEvents(data);
+        if (refreshEvents) refreshEvents();
       } else {
         console.error('API returned non-array:', data);
         setEvents([]);
@@ -73,25 +78,61 @@ export default function CalendarView() {
     }
   };
 
-  const fetchHolidays = async () => {
-    try {
-      // Fetch public holidays for Indonesia for the current year
-      const year = new Date().getFullYear();
-      const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/ID`);
-      if (res.ok) {
-        const data = await res.json();
-        setHolidays(data.map(h => ({
-          id: `holiday-${h.date}`,
-          title: h.localName,
-          start: h.date,
-          allDay: true,
-          color: '#ef4444', // Bright red
-          extendedProps: { isHoliday: true, name: h.localName }
-        })));
-      }
-    } catch (err) {
-      console.error('Failed to fetch holidays:', err);
-    }
+  const fetchHolidays = () => {
+    const hardcodedHolidays = [
+      // 2026
+      { date: '2026-01-01', localName: 'Tahun Baru Masehi' },
+      { date: '2026-01-16', localName: 'Isra Mikraj Nabi Muhammad SAW' },
+      { date: '2026-02-17', localName: 'Tahun Baru Imlek' },
+      { date: '2026-03-19', localName: 'Hari Suci Nyepi' },
+      { date: '2026-03-21', localName: 'Hari Raya Idul Fitri 1447 H' },
+      { date: '2026-03-22', localName: 'Hari Raya Idul Fitri 1447 H' },
+      { date: '2026-04-03', localName: 'Wafat Yesus Kristus' },
+      { date: '2026-04-05', localName: 'Hari Paskah' },
+      { date: '2026-05-01', localName: 'Hari Buruh Internasional' },
+      { date: '2026-05-14', localName: 'Kenaikan Yesus Kristus' },
+      { date: '2026-05-27', localName: 'Hari Raya Idul Adha 1447 H' },
+      { date: '2026-05-31', localName: 'Hari Raya Waisak 2570 BE' },
+      { date: '2026-06-01', localName: 'Hari Lahir Pancasila' },
+      { date: '2026-06-16', localName: 'Tahun Baru Islam 1448 H' },
+      { date: '2026-08-17', localName: 'Hari Kemerdekaan RI' },
+      { date: '2026-08-25', localName: 'Maulid Nabi Muhammad SAW' },
+      { date: '2026-12-25', localName: 'Hari Raya Natal' },
+      { date: '2026-03-18', localName: 'Cuti Bersama Idul Fitri' },
+      { date: '2026-03-19', localName: 'Cuti Bersama Idul Fitri' },
+      { date: '2026-03-20', localName: 'Cuti Bersama Idul Fitri' },
+      { date: '2026-03-23', localName: 'Cuti Bersama Idul Fitri' },
+      { date: '2026-03-24', localName: 'Cuti Bersama Idul Fitri' },
+      { date: '2026-12-24', localName: 'Cuti Bersama Natal' },
+      { date: '2026-12-26', localName: 'Cuti Bersama Natal' },
+      // 2027
+      { date: '2027-01-01', localName: 'Tahun Baru Masehi' },
+      { date: '2027-02-05', localName: 'Isra Mikraj Nabi Muhammad SAW' },
+      { date: '2027-02-06', localName: 'Tahun Baru Imlek' },
+      { date: '2027-03-09', localName: 'Hari Suci Nyepi' },
+      { date: '2027-03-10', localName: 'Hari Raya Idul Fitri 1448 H' },
+      { date: '2027-03-11', localName: 'Hari Raya Idul Fitri 1448 H' },
+      { date: '2027-03-26', localName: 'Wafat Yesus Kristus' },
+      { date: '2027-03-28', localName: 'Hari Paskah' },
+      { date: '2027-05-01', localName: 'Hari Buruh Internasional' },
+      { date: '2027-05-06', localName: 'Kenaikan Yesus Kristus' },
+      { date: '2027-05-17', localName: 'Hari Raya Idul Adha 1448 H' },
+      { date: '2027-05-20', localName: 'Hari Raya Waisak' },
+      { date: '2027-06-01', localName: 'Hari Lahir Pancasila' },
+      { date: '2027-06-05', localName: 'Tahun Baru Islam 1449 H' },
+      { date: '2027-08-14', localName: 'Maulid Nabi Muhammad SAW' },
+      { date: '2027-08-17', localName: 'Hari Kemerdekaan RI' },
+      { date: '2027-12-25', localName: 'Hari Raya Natal' },
+      { date: '2027-12-24', localName: 'Cuti Bersama Natal' }
+    ];
+    setHolidays(hardcodedHolidays.map(h => ({
+      id: `holiday-${h.date}-${h.localName.replace(/\s+/g, '-')}`,
+      title: h.localName,
+      start: h.date,
+      allDay: true,
+      color: '#ef4444',
+      extendedProps: { isHoliday: true, name: h.localName }
+    })));
   };
 
   // Convert our custom events to FullCalendar format
@@ -106,12 +147,13 @@ export default function CalendarView() {
       })
       .map(ev => ({
         id: ev.id,
-        title: ev.title,
+        title: ev.isCompleted ? `\u0336${ev.title.split('').join('\u0336')}\u0336 \u2713` : ev.title, // Add strikethrough effect and checkmark
         start: ev.isAllDay ? ev.date : `${ev.date}T${ev.startTime || '00:00'}:00`,
         end: ev.isAllDay ? ev.date : `${ev.date}T${ev.endTime || '23:59'}:00`,
         allDay: ev.isAllDay,
-        backgroundColor: CATEGORY_COLORS[ev.category] || CATEGORY_COLORS.Other,
-        borderColor: CATEGORY_COLORS[ev.category] || CATEGORY_COLORS.Other,
+        backgroundColor: ev.isCompleted ? '#9ca3af' : (CATEGORY_COLORS[ev.category] || CATEGORY_COLORS.Other),
+        borderColor: ev.isCompleted ? '#9ca3af' : (CATEGORY_COLORS[ev.category] || CATEGORY_COLORS.Other),
+        classNames: ev.isCompleted ? ['completed-event'] : [],
         extendedProps: { ...ev }
       }))
   ];
@@ -119,7 +161,7 @@ export default function CalendarView() {
   const handleDateClick = (info) => {
     setFormData({
       id: '', title: '', date: info.dateStr, startTime: '', endTime: '',
-      isAllDay: info.allDay, category: 'Other', notes: '', location: '', url: '', attachment: ''
+      isAllDay: info.allDay, category: 'Other', notes: '', location: '', url: '', attachment: '', createdBy: '', isCompleted: false, completedBy: ''
     });
     setIsModalOpen(true);
   };
@@ -156,7 +198,7 @@ export default function CalendarView() {
     const payload = { ...oldProps, date, startTime, endTime, isAllDay: ev.allDay };
     
     try {
-      const res = await fetch(`http://localhost:3000/api/events/${oldProps.id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/events/${oldProps.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -182,11 +224,12 @@ export default function CalendarView() {
     
     const payload = {
       ...formData,
-      id: formData.id || `evt-${Date.now()}`
+      id: formData.id || `evt-${Date.now()}`,
+      createdBy: formData.id ? formData.createdBy : (user?.nama || user?.name || 'Unknown User')
     };
 
     const method = formData.id ? 'PUT' : 'POST';
-    const url = formData.id ? `http://localhost:3000/api/events/${formData.id}` : 'http://localhost:3000/api/events';
+    const url = formData.id ? `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/events/${formData.id}` : `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/events`;
 
     try {
       const res = await fetch(url, {
@@ -210,7 +253,7 @@ export default function CalendarView() {
 
   const handleDelete = async (id) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/events/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/events/${id}`, { method: 'DELETE' });
       if (res.ok) {
         fetchEvents();
         setIsDetailOpen(false);
@@ -219,6 +262,29 @@ export default function CalendarView() {
       }
     } catch (err) {
       alert('Gagal menghapus agenda');
+    }
+  };
+
+  const handleToggleComplete = async () => {
+    if (!selectedEvent || selectedEvent.isHoliday) return;
+    
+    const newIsCompleted = !selectedEvent.isCompleted;
+    const completedBy = newIsCompleted ? (user?.nama || user?.name || 'Unknown User') : null;
+    
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/events/${selectedEvent.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isCompleted: newIsCompleted, completedBy })
+      });
+      if (res.ok) {
+        setSelectedEvent(prev => ({ ...prev, isCompleted: newIsCompleted, completedBy }));
+        fetchEvents();
+      } else {
+        alert('Gagal mengupdate status agenda');
+      }
+    } catch (err) {
+      alert('Terjadi kesalahan koneksi');
     }
   };
 
@@ -585,11 +651,11 @@ export default function CalendarView() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="label">Kategori</label>
-                  <select name="category" value={formData.category} onChange={handleChange} className="input-field">
-                    {Object.keys(CATEGORY_COLORS).map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+                  <CustomSelect
+                    value={formData.category}
+                    onChange={(val) => handleChange({ target: { name: 'category', value: val } })}
+                    options={Object.keys(CATEGORY_COLORS).map(cat => ({ value: cat, label: cat }))}
+                  />
                 </div>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="label">Tanggal <span style={{ color: '#ef4444' }}>*</span></label>
@@ -659,7 +725,7 @@ export default function CalendarView() {
             animation: 'slideUp 0.3s ease-out'
           }}>
             <div style={{ 
-              background: CATEGORY_COLORS[selectedEvent.category] || CATEGORY_COLORS.Other, 
+              background: selectedEvent.isCompleted ? '#9ca3af' : (CATEGORY_COLORS[selectedEvent.category] || CATEGORY_COLORS.Other), 
               padding: '2rem 1.5rem', position: 'relative', color: 'white' 
             }}>
               <button onClick={() => setIsDetailOpen(false)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'rgba(0,0,0,0.2)', border: 'none', borderRadius: '50%', padding: '6px', cursor: 'pointer', color: 'white', display: 'flex' }}>
@@ -668,11 +734,29 @@ export default function CalendarView() {
               <div style={{ display: 'inline-block', padding: '4px 12px', background: 'rgba(255,255,255,0.2)', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.75rem' }}>
                 {selectedEvent.category}
               </div>
-              <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 600, lineHeight: 1.3 }}>{selectedEvent.title}</h3>
+              <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 600, lineHeight: 1.3, textDecoration: selectedEvent.isCompleted ? 'line-through' : 'none' }}>
+                {selectedEvent.title}
+              </h3>
             </div>
             
             <div style={{ padding: '1.5rem' }}>
+              {selectedEvent.isCompleted && selectedEvent.completedBy && (
+                <div style={{ background: '#dcfce7', color: '#166534', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
+                  <CheckCircle size={18} />
+                  Selesai dicek oleh {selectedEvent.completedBy}
+                </div>
+              )}
+              
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                  <UserIcon size={20} color="#64748b" style={{ marginTop: '2px' }} />
+                  <div>
+                    <div style={{ fontWeight: 600, color: '#0f172a' }}>Pembuat Event</div>
+                    <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                      {selectedEvent.createdBy || 'Unknown User'}
+                    </div>
+                  </div>
+                </div>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
                   <Clock size={20} color="#64748b" style={{ marginTop: '2px' }} />
                   <div>
@@ -725,6 +809,18 @@ export default function CalendarView() {
               </div>
 
               <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0' }}>
+                <button 
+                  onClick={handleToggleComplete}
+                  style={{ 
+                    flex: 1, display: 'flex', justifyContent: 'center', gap: '0.5rem', 
+                    background: selectedEvent.isCompleted ? '#f3f4f6' : '#dcfce7', 
+                    border: `1px solid ${selectedEvent.isCompleted ? '#d1d5db' : '#bbf7d0'}`, 
+                    color: selectedEvent.isCompleted ? '#4b5563' : '#16a34a', 
+                    borderRadius: '8px', padding: '0.75rem', fontWeight: 600, cursor: 'pointer' 
+                  }}
+                >
+                  <CheckCircle size={18} /> {selectedEvent.isCompleted ? 'Batal Selesai' : 'Tandai Selesai'}
+                </button>
                 <button 
                   onClick={openEditModal}
                   className="btn btn-secondary" 

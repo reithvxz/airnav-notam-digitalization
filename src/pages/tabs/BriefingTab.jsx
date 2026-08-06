@@ -5,6 +5,7 @@ import { CustomSelect } from '../../components/CustomPickers';
 import ShiftStats from '../../components/dashboard/ShiftStats';
 import DocumentViewerModal from '../../components/DocumentViewerModal';
 import BriefingTemplate from '../../components/BriefingTemplate';
+import Pagination from '../../components/Pagination';
 import { useAuth } from '../../context/AuthContext';
 
 export default function BriefingTab({ briefings, incomingOptions, outgoingOptions, selectedBriefing, setSelectedBriefing, onDelete }) {
@@ -12,6 +13,8 @@ export default function BriefingTab({ briefings, incomingOptions, outgoingOption
   const [briefingShiftFilter, setBriefingShiftFilter] = useState('all');
   const [briefingIncomingFilter, setBriefingIncomingFilter] = useState('all');
   const [briefingOutgoingFilter, setBriefingOutgoingFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   const filteredBriefings = useMemo(() => {
     return briefings.filter(b => {
@@ -21,6 +24,17 @@ export default function BriefingTab({ briefings, incomingOptions, outgoingOption
       return matchShift && matchIncoming && matchOutgoing;
     });
   }, [briefings, briefingShiftFilter, briefingIncomingFilter, briefingOutgoingFilter]);
+
+  // Reset to page 1 when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [briefingShiftFilter, briefingIncomingFilter, briefingOutgoingFilter]);
+
+  const totalPages = Math.ceil(filteredBriefings.length / itemsPerPage);
+  const paginatedBriefings = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredBriefings.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredBriefings, currentPage]);
 
   return (
     <>
@@ -89,7 +103,7 @@ export default function BriefingTab({ briefings, incomingOptions, outgoingOption
                 </tr>
               </thead>
               <tbody>
-                {filteredBriefings.map(b => (
+                {paginatedBriefings.map(b => (
                   <tr key={b.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedBriefing(b)}>
                     <td style={{ fontWeight: 600 }}>{b.date}</td>
                     <td>{b.time}</td>
@@ -114,13 +128,24 @@ export default function BriefingTab({ briefings, incomingOptions, outgoingOption
                           Lihat PDF
                         </button>
                         {user?.role === 'admin' && (
-                          <button
-                            className="btn"
-                            style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer' }}
-                            onClick={(e) => onDelete(b.id, e)}
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                          <>
+                            <Link
+                              to="/admin/create-briefing"
+                              state={{ briefing: b }}
+                              className="btn btn-primary"
+                              style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              Edit
+                            </Link>
+                            <button
+                              className="btn"
+                              style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                              onClick={(e) => onDelete(b.id, e)}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -129,6 +154,14 @@ export default function BriefingTab({ briefings, incomingOptions, outgoingOption
               </tbody>
             </table>
           </div>
+        )}
+
+        {filteredBriefings.length > 0 && (
+          <Pagination 
+            currentPage={currentPage} 
+            totalPages={totalPages} 
+            onPageChange={setCurrentPage} 
+          />
         )}
       </div>
 

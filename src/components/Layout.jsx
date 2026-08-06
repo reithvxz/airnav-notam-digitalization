@@ -32,9 +32,9 @@ export default function Layout() {
     async function fetchActivities() {
       try {
         const [resBrief, resPost, resPre] = await Promise.all([
-          fetch('http://localhost:3000/api/briefings'),
-          fetch('http://localhost:3000/api/postshifts'),
-          fetch('http://localhost:3000/api/preduties')
+          fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/briefings`),
+          fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/postshifts`),
+          fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/preduties`)
         ]);
         const briefs = resBrief.ok ? await resBrief.json() : [];
         const posts = resPost.ok ? await resPost.json() : [];
@@ -83,7 +83,7 @@ export default function Layout() {
     }
 
     try {
-      const response = await fetch('http://localhost:3000/api/users/password', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/users/password`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

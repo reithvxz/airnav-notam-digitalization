@@ -71,4 +71,34 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// API: Update PostShift
+router.put('/:id', async (req, res) => {
+  try {
+    const postshift = await PostShift.findByPk(req.params.id);
+    if (!postshift) return res.status(404).json({ error: 'PostShift not found' });
+    
+    const { date, time, managerOnDuty, shift, checklistData, incomingManager, outgoingManager } = req.body;
+    
+    await postshift.update({
+      date: date || postshift.date,
+      time: time || postshift.time,
+      managerOnDuty: managerOnDuty || postshift.managerOnDuty,
+      shift: shift || postshift.shift,
+      checklistData: checklistData ? JSON.stringify(checklistData) : postshift.checklistData,
+      incomingManager: incomingManager ? JSON.stringify(incomingManager) : postshift.incomingManager,
+      outgoingManager: outgoingManager ? JSON.stringify(outgoingManager) : postshift.outgoingManager
+    });
+    
+    const responseData = postshift.toJSON();
+    responseData.checklistData = JSON.parse(responseData.checklistData);
+    responseData.incomingManager = JSON.parse(responseData.incomingManager);
+    responseData.outgoingManager = JSON.parse(responseData.outgoingManager);
+    
+    res.json({ success: true, postshift: responseData });
+  } catch (err) {
+    console.error('Error updating postshift:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

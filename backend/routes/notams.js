@@ -45,4 +45,31 @@ router.post('/', async (req, res) => {
   }
 });
 
+// API: Update Notam
+router.put('/:id', async (req, res) => {
+  try {
+    const notam = await Notam.findByPk(req.params.id);
+    if (!notam) return res.status(404).json({ error: 'Notam not found' });
+    
+    const { formNo, jenis, lokasi, waktuMulai, waktuSelesai, formData } = req.body;
+    
+    await notam.update({
+      formNo: formNo || notam.formNo,
+      jenis: jenis || notam.jenis,
+      lokasi: lokasi || notam.lokasi,
+      waktuMulai: waktuMulai || notam.waktuMulai,
+      waktuSelesai: waktuSelesai || notam.waktuSelesai,
+      formData: formData ? JSON.stringify(formData) : notam.formData
+    });
+    
+    const responseData = notam.toJSON();
+    responseData.formData = JSON.parse(responseData.formData);
+    
+    res.json({ success: true, notam: responseData });
+  } catch (err) {
+    console.error("Error updating NOTAM:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

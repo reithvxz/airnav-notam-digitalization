@@ -191,7 +191,7 @@ const PdfTemplate = forwardRef(({ formData, user, formNo, docMode }, ref) => {
               <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>Pemohon</div>
               {formData.creatorSignature || user?.tanda_tangan ? (
                 <img 
-                  src={`http://localhost:3000/signatures/${formData.creatorSignature || user?.tanda_tangan}`} 
+                  src={`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/signatures/${formData.creatorSignature || user?.tanda_tangan}`} 
                   alt="Tanda Tangan Pemohon" 
                   style={{ maxHeight: '60px', display: 'block', margin: '0 auto 10px' }} 
                   crossOrigin="anonymous"
@@ -318,7 +318,7 @@ const PdfTemplate = forwardRef(({ formData, user, formNo, docMode }, ref) => {
                 <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>Pemohon</div>
                 {formData.creatorSignature || user?.tanda_tangan ? (
                   <img 
-                    src={`http://localhost:3000/signatures/${formData.creatorSignature || user?.tanda_tangan}`} 
+                    src={`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/signatures/${formData.creatorSignature || user?.tanda_tangan}`} 
                     alt="Tanda Tangan Pemohon" 
                     style={{ maxHeight: '60px', display: 'block', margin: '0 auto 10px' }} 
                     crossOrigin="anonymous"

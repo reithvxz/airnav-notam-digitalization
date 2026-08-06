@@ -5,14 +5,19 @@ import { FileText, Map, Download, CheckCircle, ArrowLeft } from 'lucide-react';
 import generatePdf from '../utils/pdfGenerator';
 import PdfTemplate from '../components/PdfTemplate';
 import { v4 as uuidv4 } from 'uuid';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { CustomSelect } from '../components/CustomPickers';
 
 export default function CreateNotam() {
   const { user } = useAuth();
   const { notams, addNotam, updateNotam, deleteNotam } = useNotams();
   const navigate = useNavigate();
+  const location = useLocation();
   
-  const [formData, setFormData] = useState({
+  const editItem = location.state?.notam;
+  const isEditMode = !!editItem;
+  
+  const [formData, setFormData] = useState(isEditMode && editItem.formData ? editItem.formData : {
     jenisNotam: 'NOTAM New',
     lokasi: '',
     waktuMulai: '',
@@ -115,7 +120,16 @@ export default function CreateNotam() {
       return d.getMonth() === today.getMonth() && d.getFullYear() === currentYear;
     });
 
-    const nextNumber = notamsThisMonth.length + 1;
+    const maxNumber = notamsThisMonth.reduce((max, notam) => {
+      const match = notam.formNo?.match(/^(\d+)\//);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        return num > max ? num : max;
+      }
+      return max;
+    }, 0);
+
+    const nextNumber = maxNumber + 1;
     const formNo = `${nextNumber.toString().padStart(2, '0')}/${monthRoman}/${currentYear}`;
 
     // Get targetFormNo if Replace or Cancel
@@ -165,13 +179,14 @@ export default function CreateNotam() {
       }
       
       // Then save data and redirect (will execute even if PDF fails)
+      // Always add as a new NOTAM (Edit functions as Duplicate/Copy)
       addNotam(newNotam);
       setIsSubmitting(false);
       setIsSuccess(true);
       
       setTimeout(() => {
         setIsSuccess(false);
-        navigate('/admin/dashboard');
+        navigate('/admin/dashboard', { state: { tab: 'notam' } });
       }, 2000);
     }, 100);
   };
@@ -186,35 +201,32 @@ export default function CreateNotam() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
         <div className="form-group">
           <label className="label">Jenis NOTAM</label>
-          <select 
-            name="jenisNotam" 
-            value={formData.jenisNotam} 
-            onChange={(e) => {
-              handleInputChange(e);
+          <CustomSelect
+            value={formData.jenisNotam}
+            onChange={(val) => {
+              handleInputChange({ target: { name: 'jenisNotam', value: val } });
               setSelectedExistingNotamId('');
-            }} 
-            className="input-field"
-          >
-            <option value="NOTAM New">NOTAM New</option>
-            <option value="NOTAM Replace">NOTAM Replace</option>
-            <option value="NOTAM Cancel">NOTAM Cancel</option>
-          </select>
+            }}
+            options={[
+              { value: 'NOTAM New', label: 'NOTAM New' },
+              { value: 'NOTAM Replace', label: 'NOTAM Replace' },
+              { value: 'NOTAM Cancel', label: 'NOTAM Cancel' }
+            ]}
+          />
         </div>
         
         {(formData.jenisNotam === 'NOTAM Replace' || formData.jenisNotam === 'NOTAM Cancel') && (
           <div className="form-group">
             <label className="label">Pilih NOTAM yang ingin di-{formData.jenisNotam === 'NOTAM Replace' ? 'replace' : 'cancel'}</label>
-            <select 
+            <CustomSelect
               value={selectedExistingNotamId}
-              onChange={handleExistingNotamChange}
-              className="input-field"
-              required
-            >
-              <option value="">-- Pilih NOTAM --</option>
-              {availableNotams.map(n => (
-                <option key={n.id} value={n.id}>{n.formNo} - {n.formData?.lokasi || ''}</option>
-              ))}
-            </select>
+              onChange={(val) => handleExistingNotamChange({ target: { value: val } })}
+              placeholder="-- Pilih NOTAM --"
+              options={availableNotams.map(n => ({
+                value: n.id,
+                label: `${n.formNo} - ${n.formData?.lokasi || ''}`
+              }))}
+            />
           </div>
         )}
       </div>

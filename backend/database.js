@@ -1,12 +1,18 @@
+require('dotenv').config();
 const { Sequelize, DataTypes } = require('sequelize');
 const path = require('path');
 
 // Initialize MySQL Database
-const sequelize = new Sequelize('airnav_db', 'root', '', {
-  host: 'localhost',
-  dialect: 'mysql',
-  logging: false // disable logging for cleaner terminal
-});
+const sequelize = new Sequelize(
+  process.env.DB_NAME || 'airnav_db', 
+  process.env.DB_USER || 'root', 
+  process.env.DB_PASS || '', 
+  {
+    host: process.env.DB_HOST || 'localhost',
+    dialect: 'mysql',
+    logging: false // disable logging for cleaner terminal
+  }
+);
 
 // Define User Model
 const User = sequelize.define('User', {
@@ -285,6 +291,18 @@ const Event = sequelize.define('Event', {
     allowNull: true
   },
   attachment: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  createdBy: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  isCompleted: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  completedBy: {
     type: DataTypes.STRING,
     allowNull: true
   }

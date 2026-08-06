@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Save, ArrowLeft, Plus, Trash2, CheckSquare, Image as ImageIcon } from 'lucide-react';
@@ -95,7 +95,7 @@ export default function CreatePreduty() {
     return new Date().toISOString().split('T')[0];
   };
 
-  const [date, setDate] = useState(editData ? parseDateForInput(editData.date) : new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [time, setTime] = useState(editData?.time || initTime);
   const [shift, setShift] = useState(editData?.shift || 'PAGI');
   
@@ -122,6 +122,20 @@ export default function CreatePreduty() {
   const [successMsg, setSuccessMsg] = useState('');
   
   const pdfRef = useRef();
+
+  useEffect(() => {
+    if (editData && editData.id && editData.personelImage === undefined) {
+      // Data gambar di-exclude dari daftar untuk optimasi, jadi kita tarik manual untuk edit
+      fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/preduties/${editData.id}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.personelImage) setPersonelImage(data.personelImage);
+          if (data.trafficImage) setTrafficImage(data.trafficImage);
+          if (data.weatherImage) setWeatherImage(data.weatherImage);
+        })
+        .catch(err => console.error("Gagal mengambil gambar lengkap:", err));
+    }
+  }, [editData]);
 
   const resetForm = () => {
     setDate(new Date().toISOString().split('T')[0]);
@@ -205,7 +219,7 @@ export default function CreatePreduty() {
         await generatePdf(pdfRef.current, `Preduty_${shift}_${date}.pdf`);
       }
 
-      const res = await fetch('http://localhost:3000/api/preduties', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/preduties`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -215,7 +229,7 @@ export default function CreatePreduty() {
       
       setSuccessMsg('Form Preduty berhasil disimpan dan PDF berhasil diunduh! Mengalihkan...');
       setTimeout(() => {
-        navigate('/admin/predutys');
+        navigate('/admin/dashboard', { state: { tab: 'preduty' } });
       }, 1500);
     } catch (err) {
       setError(err.message);

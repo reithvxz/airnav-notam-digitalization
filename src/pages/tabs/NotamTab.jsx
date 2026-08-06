@@ -3,14 +3,31 @@ import { Link } from 'react-router-dom';
 import { Plus, FileText, CheckCircle, Clock, TrendingUp, Trash2 } from 'lucide-react';
 import { CustomSelect } from '../../components/CustomPickers';
 import PdfViewerModal from '../../components/PdfViewerModal';
+import ConfirmModal from '../../components/ConfirmModal';
+import Pagination from '../../components/Pagination';
 import { useAuth } from '../../context/AuthContext';
 
 export default function NotamTab({ notams, deleteNotam, selectedNotam, setSelectedNotam, initialStatusFilter = 'all' }) {
   const { user } = useAuth();
   const [statusFilter, setStatusFilter] = useState(initialStatusFilter);
   const [jenisFilter, setJenisFilter] = useState('all');
+  const [creatorFilter, setCreatorFilter] = useState('all');
+  const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, id: null });
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   const now = new Date();
+
+  // Extract unique creators for the dropdown
+  const uniqueCreators = useMemo(() => {
+    const creators = new Set();
+    const safeNotams = Array.isArray(notams) ? notams : [];
+    safeNotams.forEach(n => {
+      const creator = n.formData?.creatorName || n.creatorName || n.formData?.creatorInitial || n.creator || n.createdBy;
+      if (creator) creators.add(creator);
+    });
+    return Array.from(creators).sort();
+  }, [notams]);
 
   const { activeNotams, incomingNotams, pastNotams, completedThisMonth, thisMonthCount, filteredNotams } = useMemo(() => {
     const _now = new Date();
@@ -53,6 +70,12 @@ export default function NotamTab({ notams, deleteNotam, selectedNotam, setSelect
     if (jenisFilter !== 'all') {
       filtered = filtered.filter(n => (n.formData?.jenisNotam || n.jenis) === jenisFilter);
     }
+    if (creatorFilter !== 'all') {
+      filtered = filtered.filter(n => {
+        const creator = n.formData?.creatorName || n.creatorName || n.formData?.creatorInitial || n.creator || n.createdBy;
+        return creator === creatorFilter;
+      });
+    }
     filtered = [...filtered].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     return {
@@ -63,12 +86,28 @@ export default function NotamTab({ notams, deleteNotam, selectedNotam, setSelect
       thisMonthCount: monthCount,
       filteredNotams: filtered,
     };
-  }, [notams, statusFilter, jenisFilter]);
+  }, [notams, statusFilter, jenisFilter, creatorFilter]);
 
-  const handleDeleteNotam = async (id, e) => {
+  // Reset to page 1 when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [statusFilter, jenisFilter, creatorFilter]);
+
+  const totalPages = Math.ceil(filteredNotams.length / itemsPerPage);
+  const paginatedNotams = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredNotams.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredNotams, currentPage]);
+
+  const handleDeleteNotam = (id, e) => {
     e.stopPropagation();
-    if (!window.confirm('Hapus NOTAM ini?')) return;
-    await deleteNotam(id);
+    setDeleteDialog({ isOpen: true, id });
+  };
+
+  const confirmDelete = async () => {
+    if (deleteDialog.id) {
+      await deleteNotam(deleteDialog.id);
+    }
   };
 
   return (
@@ -85,31 +124,49 @@ export default function NotamTab({ notams, deleteNotam, selectedNotam, setSelect
           )}
         </div>
         
-        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', width: '320px' }}>
-          <CustomSelect
-            value={statusFilter}
-            onChange={setStatusFilter}
-            placeholder="Semua Status"
-            options={[
-              { value: 'all', label: 'Semua Status' },
-              { value: 'active', label: 'Aktif (Terbit)' },
-              { value: 'incoming', label: 'Incoming' },
-              { value: 'past', label: 'Sudah Lewat' }
-            ]}
-          />
-          
-          <CustomSelect
-            value={jenisFilter}
-            onChange={setJenisFilter}
-            placeholder="Semua Jenis"
-            options={[
-              { value: 'all', label: 'Semua Jenis' },
-              { value: 'NOTAM New', label: 'NOTAM New' },
-              { value: 'NOTAM Replace', label: 'NOTAM Replace' },
-              { value: 'NOTAM Cancel', label: 'NOTAM Cancel' },
-              { value: 'Assessment Only', label: 'Assessment Only' }
-            ]}
-          />
+
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', width: '100%' }}>
+          <div style={{ flex: 1, minWidth: '180px' }}>
+            <CustomSelect
+              value={statusFilter}
+              onChange={setStatusFilter}
+              placeholder="Semua Status"
+              options={[
+                { value: 'all', label: 'Semua Status' },
+                { value: 'active', label: 'Aktif (Terbit)' },
+                { value: 'incoming', label: 'Incoming' },
+                { value: 'past', label: 'Sudah Lewat' }
+              ]}
+            />
+          </div>
+          <div style={{ flex: 1, minWidth: '180px' }}>
+            <CustomSelect
+              value={jenisFilter}
+              onChange={setJenisFilter}
+              placeholder="Semua Jenis NOTAM"
+              options={[
+                { value: 'all', label: 'Semua Jenis NOTAM' },
+                { value: 'NOTAM New', label: 'New' },
+                { value: 'NOTAM Replace', label: 'Replace' },
+                { value: 'NOTAM Cancel', label: 'Cancel' },
+                { value: 'Assessment Only', label: 'Assessment Only' }
+              ]}
+            />
+          </div>
+          <div style={{ flex: 1, minWidth: '180px' }}>
+            <CustomSelect
+              value={creatorFilter}
+              onChange={setCreatorFilter}
+              placeholder="Semua Pembuat"
+              options={[
+                { value: 'all', label: 'Semua Pembuat' },
+                ...uniqueCreators.map(creator => {
+                  const isMe = user && (creator === user.name || creator === user.nama);
+                  return { value: creator, label: isMe ? `${creator} (Saya)` : creator };
+                })
+              ]}
+            />
+          </div>
         </div>
 
         {filteredNotams.length === 0 ? (
@@ -132,7 +189,7 @@ export default function NotamTab({ notams, deleteNotam, selectedNotam, setSelect
                 </tr>
               </thead>
               <tbody>
-                {filteredNotams.map((notam) => {
+                {paginatedNotams.map(notam => {
                   const formData = notam.formData || {};
                   const jenisNotam = formData.jenisNotam || notam.jenis || '';
                   const lokasi = formData.lokasi || notam.lokasi || '';
@@ -184,13 +241,24 @@ export default function NotamTab({ notams, deleteNotam, selectedNotam, setSelect
                             Lihat PDF
                           </button>
                           {user?.role === 'admin' && (
-                            <button
-                              className="btn"
-                              style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer' }}
-                              onClick={(e) => handleDeleteNotam(notam.id, e)}
-                            >
-                              <Trash2 size={13} />
-                            </button>
+                            <>
+                              <Link
+                                to="/admin/create-notam"
+                                state={{ notam: notam }}
+                                className="btn btn-primary"
+                                style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                Edit
+                              </Link>
+                              <button
+                                className="btn"
+                                style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                                onClick={(e) => handleDeleteNotam(notam.id, e)}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </>
                           )}
                         </div>
                       </td>
@@ -201,11 +269,26 @@ export default function NotamTab({ notams, deleteNotam, selectedNotam, setSelect
             </table>
           </div>
         )}
+        
+        {filteredNotams.length > 0 && (
+          <Pagination 
+            currentPage={currentPage} 
+            totalPages={totalPages} 
+            onPageChange={setCurrentPage} 
+          />
+        )}
       </div>
-      
+
       {selectedNotam && (
         <PdfViewerModal notam={selectedNotam} onClose={() => setSelectedNotam(null)} />
       )}
+      <ConfirmModal 
+        isOpen={deleteDialog.isOpen}
+        onClose={() => setDeleteDialog({ isOpen: false, id: null })}
+        onConfirm={confirmDelete}
+        title="Hapus NOTAM?"
+        message="Apakah Anda yakin ingin menghapus dokumen NOTAM ini? Tindakan ini tidak dapat dibatalkan."
+      />
     </>
   );
 }

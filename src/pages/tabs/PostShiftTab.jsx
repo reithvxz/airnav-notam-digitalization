@@ -5,6 +5,7 @@ import { CustomSelect } from '../../components/CustomPickers';
 import ShiftStats from '../../components/dashboard/ShiftStats';
 import DocumentViewerModal from '../../components/DocumentViewerModal';
 import PostShiftTemplate from '../../components/PostShiftTemplate';
+import Pagination from '../../components/Pagination';
 import { useAuth } from '../../context/AuthContext';
 
 export default function PostShiftTab({ postshifts, incomingOptions, outgoingOptions, selectedPostShift, setSelectedPostShift, onDelete }) {
@@ -12,6 +13,8 @@ export default function PostShiftTab({ postshifts, incomingOptions, outgoingOpti
   const [postshiftShiftFilter, setPostshiftShiftFilter] = useState('all');
   const [postshiftIncomingFilter, setPostshiftIncomingFilter] = useState('all');
   const [postshiftOutgoingFilter, setPostshiftOutgoingFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   const filteredPostshifts = useMemo(() => {
     return postshifts.filter(p => {
@@ -21,6 +24,17 @@ export default function PostShiftTab({ postshifts, incomingOptions, outgoingOpti
       return matchShift && matchIncoming && matchOutgoing;
     });
   }, [postshifts, postshiftShiftFilter, postshiftIncomingFilter, postshiftOutgoingFilter]);
+
+  // Reset to page 1 when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [postshiftShiftFilter, postshiftIncomingFilter, postshiftOutgoingFilter]);
+
+  const totalPages = Math.ceil(filteredPostshifts.length / itemsPerPage);
+  const paginatedPostshifts = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredPostshifts.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredPostshifts, currentPage]);
 
   return (
     <>
@@ -89,7 +103,7 @@ export default function PostShiftTab({ postshifts, incomingOptions, outgoingOpti
                 </tr>
               </thead>
               <tbody>
-                {filteredPostshifts.map(p => (
+                {paginatedPostshifts.map(p => (
                   <tr key={p.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedPostShift(p)}>
                     <td style={{ fontWeight: 600 }}>{p.date}</td>
                     <td>{p.time}</td>
@@ -114,13 +128,24 @@ export default function PostShiftTab({ postshifts, incomingOptions, outgoingOpti
                           Lihat PDF
                         </button>
                         {user?.role === 'admin' && (
-                          <button
-                            className="btn"
-                            style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer' }}
-                            onClick={(e) => onDelete(p.id, e)}
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                          <>
+                            <Link
+                              to="/admin/create-postshift"
+                              state={{ postshift: p }}
+                              className="btn btn-primary"
+                              style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              Edit
+                            </Link>
+                            <button
+                              className="btn"
+                              style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                              onClick={(e) => onDelete(p.id, e)}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -129,6 +154,14 @@ export default function PostShiftTab({ postshifts, incomingOptions, outgoingOpti
               </tbody>
             </table>
           </div>
+        )}
+
+        {filteredPostshifts.length > 0 && (
+          <Pagination 
+            currentPage={currentPage} 
+            totalPages={totalPages} 
+            onPageChange={setCurrentPage} 
+          />
         )}
       </div>
 

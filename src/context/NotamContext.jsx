@@ -16,7 +16,7 @@ export const NotamProvider = ({ children }) => {
 
   const fetchNotams = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/notams');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/notams`);
       const data = await response.json();
       setNotams(data);
     } catch (err) {
@@ -26,7 +26,7 @@ export const NotamProvider = ({ children }) => {
 
   const addNotam = async (newNotam) => {
     try {
-      const response = await fetch('http://localhost:3000/api/notams', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/notams`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newNotam)
@@ -40,8 +40,20 @@ export const NotamProvider = ({ children }) => {
     }
   };
 
-  const updateNotam = (id, updatedData) => {
-    setNotams(prev => prev.map(notam => notam.id === id ? { ...notam, formData: updatedData } : notam));
+  const updateNotam = async (id, updatedData) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/notams/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
+      });
+      const data = await response.json();
+      if (data.success) {
+        setNotams(prev => prev.map(notam => notam.id === id ? data.notam : notam));
+      }
+    } catch (err) {
+      console.error("Error updating notam:", err);
+    }
   };
 
   const deleteNotam = (id) => {

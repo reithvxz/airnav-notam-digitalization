@@ -3,7 +3,10 @@ const { Preduty } = require('../database');
 
 router.get('/', async (req, res) => {
   try {
-    const preduties = await Preduty.findAll({ order: [['createdAt', 'DESC']] });
+    const preduties = await Preduty.findAll({ 
+      attributes: { exclude: ['personelImage', 'trafficImage', 'weatherImage'] },
+      order: [['createdAt', 'DESC']] 
+    });
     const parsed = preduties.map(p => {
       const data = p.toJSON();
       if (data.managerOnDutyInfo) data.managerOnDutyInfo = JSON.parse(data.managerOnDutyInfo);

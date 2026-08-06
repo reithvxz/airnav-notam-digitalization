@@ -10,7 +10,7 @@ export default function ShiftSettings() {
   const [activeTab, setActiveTab] = useState('preshift');
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/settings/shift')
+    fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/settings/shift`)
       .then(r => r.json())
       .then(data => {
         setSettings(data);
@@ -36,7 +36,7 @@ export default function ShiftSettings() {
     setSaving(true);
     setMessage({ text: '', type: '' });
     try {
-      const res = await fetch('http://localhost:3000/api/settings/shift', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/settings/shift`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings)

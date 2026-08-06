@@ -19,7 +19,7 @@ export default function AccountManagement() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/users?all=true');
+      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/users?all=true`);
       const data = await res.json();
       setUsers(data);
     } catch (err) {
@@ -41,7 +41,7 @@ export default function AccountManagement() {
     if (!actionTarget) return;
     const { id, type } = actionTarget;
     
-    let url = `http://localhost:3000/api/users/${id}`;
+    let url = `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/users/${id}`;
     let method = 'DELETE';
     if (type === 'deactivate') {
       url = `${url}/deactivate`;
@@ -107,7 +107,7 @@ export default function AccountManagement() {
       data.append('password', formData.password);
       data.append('tanda_tangan_file', file);
 
-      const response = await fetch('http://localhost:3000/api/users', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/users`, {
         method: 'POST',
         body: data
       });

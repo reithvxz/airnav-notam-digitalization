@@ -184,7 +184,7 @@ const BriefingTemplate = forwardRef(function BriefingTemplate({ briefing }, ref)
             <td style={{ ...s.sigTd, height: 70, padding: '4px' }}>
               {incomingManager?.ttd && (
                 <img
-                  src={`http://localhost:3000/signatures/${incomingManager.ttd}`}
+                  src={`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/signatures/${incomingManager.ttd}`}
                   alt="TTD"
                   style={{ maxHeight: 65, maxWidth: '100%', objectFit: 'contain' }}
                 />
@@ -200,7 +200,7 @@ const BriefingTemplate = forwardRef(function BriefingTemplate({ briefing }, ref)
             <td style={{ ...s.sigTd, height: 70, padding: '4px' }}>
               {outgoingManager?.ttd && (
                 <img
-                  src={`http://localhost:3000/signatures/${outgoingManager.ttd}`}
+                  src={`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/signatures/${outgoingManager.ttd}`}
                   alt="TTD"
                   style={{ maxHeight: 65, maxWidth: '100%', objectFit: 'contain' }}
                 />

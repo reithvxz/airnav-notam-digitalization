@@ -184,7 +184,7 @@ const PostShiftTemplate = forwardRef(({ postshift }, ref) => {
             <td style={{ ...s.sigTd, height: 70, padding: '4px' }}>
               {postshift.incomingManager?.ttd && (
                 <img
-                  src={`http://localhost:3000/signatures/${postshift.incomingManager.ttd}`}
+                  src={`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/signatures/${postshift.incomingManager.ttd}`}
                   alt="TTD"
                   style={{ maxHeight: 65, maxWidth: '100%', objectFit: 'contain' }}
                 />
@@ -200,7 +200,7 @@ const PostShiftTemplate = forwardRef(({ postshift }, ref) => {
             <td style={{ ...s.sigTd, height: 70, padding: '4px' }}>
               {postshift.outgoingManager?.ttd && (
                 <img
-                  src={`http://localhost:3000/signatures/${postshift.outgoingManager.ttd}`}
+                  src={`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/signatures/${postshift.outgoingManager.ttd}`}
                   alt="TTD"
                   style={{ maxHeight: 65, maxWidth: '100%', objectFit: 'contain' }}
                 />

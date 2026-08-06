@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Save, ArrowLeft, Plus, Trash2, User, CheckSquare, Check } from 'lucide-react';
 import { CustomDatePicker, CustomTimePicker, CustomSelect, useClickOutside } from '../components/CustomPickers';
@@ -27,7 +27,7 @@ const CONFIG = {
       SIANG: { briefingTime: '05.00 UTC', incomingTime: '05.30 UTC', outgoingTime: '06.00 UTC' },
       MALAM: { briefingTime: '11.30 UTC', incomingTime: '11.30 UTC', outgoingTime: '12.00 UTC' },
     },
-    apiEndpoint: 'http://localhost:3000/api/briefings',
+    apiEndpoint: `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/briefings`,
     navTab: 'briefing',
     title: 'Form Pre-Shift Briefing',
     subtitle: 'Checklist & Validasi Kesiapan Operasional ATC',
@@ -54,7 +54,7 @@ const CONFIG = {
       SIANG: { briefingTime: '12.00 UTC', incomingTime: '11.30 UTC', outgoingTime: '12.00 UTC' },
       MALAM: { briefingTime: '23.00 UTC', incomingTime: '23.30 UTC', outgoingTime: '00.00 UTC' },
     },
-    apiEndpoint: 'http://localhost:3000/api/postshifts',
+    apiEndpoint: `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/postshifts`,
     navTab: 'postshift',
     title: 'Form Post-Shift Review Checklist',
     subtitle: 'Review dan Evaluasi Operasional ATC',
@@ -69,8 +69,25 @@ const SHIFTS = ['PAGI', 'SIANG', 'MALAM'];
 function formatDateID(dateStr) {
   if (!dateStr) return '';
   const months = ['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'];
-  const [year, month, day] = dateStr.split('-');
-  return `${parseInt(day)} ${months[parseInt(month) - 1]} ${year}`;
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    return `${parseInt(parts[2])} ${months[parseInt(parts[1]) - 1]} ${parts[0]}`;
+  }
+  return dateStr;
+}
+
+function parseDateIDToInput(dateID) {
+  if (!dateID) return '';
+  const months = ['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'];
+  const parts = dateID.split(' ');
+  if (parts.length === 3) {
+    const day = parts[0].padStart(2, '0');
+    const monthIndex = months.indexOf(parts[1].toUpperCase()) + 1;
+    const month = monthIndex.toString().padStart(2, '0');
+    const year = parts[2];
+    return `${year}-${month}-${day}`;
+  }
+  return dateID;
 }
 
 function initChecklist(typeConfig) {
@@ -200,7 +217,7 @@ function ManagerCard({ role, users, selectedInitial, onChange, time, onTimeChang
               <div style={{ marginTop: '0.6rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.6rem' }}>
                 <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginBottom: 4 }}>Tanda Tangan:</div>
                 <img
-                  src={`http://localhost:3000/signatures/${selectedUser.tanda_tangan}`}
+                  src={`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/signatures/${selectedUser.tanda_tangan}`}
                   alt="TTD"
                   style={{ maxHeight: 56, maxWidth: 140, objectFit: 'contain', background: 'white', borderRadius: 4, border: '1px solid #e2e8f0', padding: 3 }}
                 />
@@ -220,9 +237,12 @@ function ManagerCard({ role, users, selectedInitial, onChange, time, onTimeChang
 
 export default function ShiftForm({ type }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   
   const config = CONFIG[type];
+  const editItem = location.state?.[type === 'preshift' ? 'briefing' : 'postshift'];
+  const isEditMode = !!editItem;
 
   const [users, setUsers] = useState([]);
   const [shiftSettings, setShiftSettings] = useState(null);
@@ -231,29 +251,60 @@ export default function ShiftForm({ type }) {
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
   const today = new Date().toISOString().split('T')[0];
-  const [date, setDate] = useState(today);
-  const [briefingTime, setBriefingTime] = useState('22.00 UTC');
-  const [shift, setShift] = useState('SIANG');
-  const [checklist, setChecklist] = useState(() => initChecklist(config));
-  const [extraItems, setExtraItems] = useState([]);
-  const [incomingInitial, setIncomingInitial] = useState('');
-  const [incomingTime, setIncomingTime] = useState('23.00 UTC');
-  const [outgoingInitial, setOutgoingInitial] = useState('');
-  const [outgoingTime, setOutgoingTime] = useState('00.00 UTC');
+  const initialDate = isEditMode && editItem.date ? parseDateIDToInput(editItem.date) : today;
+  
+  const [date, setDate] = useState(initialDate);
+  const [briefingTime, setBriefingTime] = useState(isEditMode ? editItem.time : '22.00 UTC');
+  const [shift, setShift] = useState(isEditMode && editItem.shift ? editItem.shift : 'SIANG');
+  const [checklist, setChecklist] = useState(() => {
+    if (isEditMode && editItem.checklist) {
+      return initChecklist(config).map((item, idx) => {
+        const edited = editItem.checklist[idx];
+        if (edited) {
+          return {
+            ...item,
+            checked: item.isTextMode ? null : (edited.status === 'OK' || edited.status === 'YES' || edited.status === true),
+            remarks: edited.keterangan || item.remarks
+          };
+        }
+        return item;
+      });
+    }
+    return initChecklist(config);
+  });
+  
+  const [extraItems, setExtraItems] = useState(() => {
+    if (isEditMode && editItem.checklist && editItem.checklist.length > config.checklistItems.length) {
+      return editItem.checklist.slice(config.checklistItems.length).map((it, i) => ({
+        id: Date.now() + i,
+        subject: it.item || '',
+        details: '',
+        checked: it.status === 'OK' || it.status === 'YES' || it.status === true,
+        remarks: it.keterangan || ''
+      }));
+    }
+    return [];
+  });
+
+  const [incomingInitial, setIncomingInitial] = useState(isEditMode && editItem.incomingManager ? editItem.incomingManager.initial : '');
+  const [incomingTime, setIncomingTime] = useState(isEditMode && editItem.incomingManager ? editItem.incomingManager.time : '23.00 UTC');
+  const [outgoingInitial, setOutgoingInitial] = useState(isEditMode && editItem.outgoingManager ? editItem.outgoingManager.initial : '');
+  const [outgoingTime, setOutgoingTime] = useState(isEditMode && editItem.outgoingManager ? editItem.outgoingManager.time : '00.00 UTC');
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/users')
+    fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/users`)
       .then(r => r.json())
       .then(data => setUsers(data))
       .catch(() => setError('Gagal memuat data user'));
       
-    fetch('http://localhost:3000/api/settings/shift')
+    fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/settings/shift`)
       .then(r => r.json())
       .then(data => setShiftSettings(data))
       .catch(console.error);
   }, []);
 
   useEffect(() => {
+    if (isEditMode) return; // Do not overwrite with settings if in edit mode
     if (shiftSettings && shiftSettings[config.shiftSettingsKey] && shiftSettings[config.shiftSettingsKey][shift]) {
       setBriefingTime(shiftSettings[config.shiftSettingsKey][shift].time || '');
       setIncomingTime(shiftSettings[config.shiftSettingsKey][shift].incoming || '');
@@ -266,7 +317,7 @@ export default function ShiftForm({ type }) {
         setOutgoingTime(fb.outgoingTime);
       }
     }
-  }, [shift, shiftSettings, config]);
+  }, [shift, shiftSettings, config, isEditMode]);
 
   const setRemarks = (idx, val) => {
     setChecklist(prev => { const u = [...prev]; u[idx] = { ...u[idx], remarks: val }; return u; });
@@ -327,8 +378,10 @@ export default function ShiftForm({ type }) {
 
     setLoading(true);
     try {
-      const res = await fetch(config.apiEndpoint, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      const url = config.apiEndpoint;
+      const method = 'POST';
+      const res = await fetch(url, {
+        method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (data.success) {

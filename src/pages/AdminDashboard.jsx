@@ -3,6 +3,7 @@ import { useNotams } from '../context/NotamContext';
 import { useAuth } from '../context/AuthContext';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import CalendarView from '../components/CalendarView';
+import ConfirmModal from '../components/ConfirmModal';
 
 import OverviewTab from './tabs/OverviewTab';
 import NotamTab from './tabs/NotamTab';
@@ -20,16 +21,23 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
   const [initialStatusFilter, setInitialStatusFilter] = useState('all');
   
   useEffect(() => {
-    setMainTab(defaultTab);
+    if (location.state?.tab) {
+      setMainTab(location.state.tab);
+    } else {
+      setMainTab(defaultTab);
+    }
+    
     if (defaultTab === 'notam' && location.state?.statusFilter) {
       setInitialStatusFilter(location.state.statusFilter);
     }
-  }, [defaultTab, location.state]);
+  }, [defaultTab, location.state, location.pathname, navigate]);
 
   const [briefings, setBriefings] = useState([]);
   const [postshifts, setPostshifts] = useState([]);
   const [preduties, setPreduties] = useState([]);
   const [events, setEvents] = useState([]);
+  
+  const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, type: null, id: null });
   
   const [selectedBriefing, setSelectedBriefing] = useState(null);
   const [selectedPostShift, setSelectedPostShift] = useState(null);
@@ -55,50 +63,59 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
 
   useEffect(() => {
     if (mainTab === 'briefing' || mainTab === 'overview') {
-      fetch('http://localhost:3000/api/briefings')
+      fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/briefings`)
         .then(r => r.json())
         .then(data => setBriefings(Array.isArray(data) ? data : []))
         .catch(() => setBriefings([]));
     }
     if (mainTab === 'postshift' || mainTab === 'overview') {
-      fetch('http://localhost:3000/api/postshifts')
+      fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/postshifts`)
         .then(r => r.json())
         .then(data => setPostshifts(Array.isArray(data) ? data : []))
         .catch(() => setPostshifts([]));
     }
     if (mainTab === 'overview' || mainTab === 'preduty') {
-      fetch('http://localhost:3000/api/preduties')
+      fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/preduties`)
         .then(r => r.json())
         .then(data => setPreduties(Array.isArray(data) ? data : []))
         .catch(() => setPreduties([]));
     }
     
     // Always fetch events for the Upcoming Events widget in notam tab, or for calendar tab
-    fetch('http://localhost:3000/api/events')
+    fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/events`)
       .then(r => r.json())
       .then(data => setEvents(Array.isArray(data) ? data : []))
       .catch(() => setEvents([]));
   }, [mainTab]);
 
-  const handleDeleteBriefing = async (id, e) => {
+  const handleDeleteBriefing = (id, e) => {
     e.stopPropagation();
-    if (!window.confirm('Hapus briefing ini?')) return;
-    await fetch(`http://localhost:3000/api/briefings/${id}`, { method: 'DELETE' });
-    setBriefings(prev => prev.filter(b => b.id !== id));
+    setDeleteDialog({ isOpen: true, type: 'briefing', id });
   };
 
-  const handleDeletePostShift = async (id, e) => {
+  const handleDeletePostShift = (id, e) => {
     e.stopPropagation();
-    if (!window.confirm('Hapus post-shift ini?')) return;
-    await fetch(`http://localhost:3000/api/postshifts/${id}`, { method: 'DELETE' });
-    setPostshifts(prev => prev.filter(p => p.id !== id));
+    setDeleteDialog({ isOpen: true, type: 'postshift', id });
   };
 
-  const handleDeletePreduty = async (id, e) => {
+  const handleDeletePreduty = (id, e) => {
     e.stopPropagation();
-    if (!window.confirm('Hapus preduty briefing ini?')) return;
-    await fetch(`http://localhost:3000/api/preduties/${id}`, { method: 'DELETE' });
-    setPreduties(prev => prev.filter(p => p.id !== id));
+    setDeleteDialog({ isOpen: true, type: 'preduty', id });
+  };
+
+  const confirmDelete = async () => {
+    const { type, id } = deleteDialog;
+    
+    if (type === 'briefing') {
+      await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/briefings/${id}`, { method: 'DELETE' });
+      setBriefings(prev => prev.filter(b => b.id !== id));
+    } else if (type === 'postshift') {
+      await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/postshifts/${id}`, { method: 'DELETE' });
+      setPostshifts(prev => prev.filter(p => p.id !== id));
+    } else if (type === 'preduty') {
+      await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/preduties/${id}`, { method: 'DELETE' });
+      setPreduties(prev => prev.filter(p => p.id !== id));
+    }
   };
 
   return (
@@ -182,6 +199,13 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
         <CalendarView />
       )}
 
+      <ConfirmModal 
+        isOpen={deleteDialog.isOpen}
+        onClose={() => setDeleteDialog({ isOpen: false, type: null, id: null })}
+        onConfirm={confirmDelete}
+        title={`Hapus ${deleteDialog.type === 'briefing' ? 'Pre-Shift' : deleteDialog.type === 'postshift' ? 'Post-Shift' : 'Preduty'}?`}
+        message={`Apakah Anda yakin ingin menghapus data ${deleteDialog.type === 'briefing' ? 'Pre-Shift' : deleteDialog.type === 'postshift' ? 'Post-Shift' : 'Preduty'} ini? Tindakan ini tidak dapat dibatalkan.`}
+      />
     </div>
   );
 }
