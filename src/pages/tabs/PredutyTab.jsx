@@ -56,6 +56,18 @@ export default function PredutyTab({ preduties, selectedPreduty, setSelectedPred
     return filteredPreduties.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredPreduties, currentPage]);
 
+  const handleSelectPreduty = async (p, e) => {
+    if (e) e.stopPropagation();
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/preduties/${p.id}`);
+      const fullData = await res.json();
+      setSelectedPreduty(fullData);
+    } catch (err) {
+      console.error(err);
+      setSelectedPreduty(p);
+    }
+  };
+
   return (
     <>
       <ShiftStats data={preduties} />
@@ -121,7 +133,7 @@ export default function PredutyTab({ preduties, selectedPreduty, setSelectedPred
               </thead>
               <tbody>
                 {paginatedPreduties.map(p => (
-                  <tr key={p.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedPreduty(p)}>
+                  <tr key={p.id} style={{ cursor: 'pointer' }} onClick={(e) => handleSelectPreduty(p, e)}>
                     <td style={{ fontWeight: 600 }}>{formatDate(p.date)}</td>
                     <td>{p.time}</td>
                     <td>
@@ -138,7 +150,7 @@ export default function PredutyTab({ preduties, selectedPreduty, setSelectedPred
                         <button
                           className="btn btn-secondary"
                           style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
-                          onClick={(e) => { e.stopPropagation(); setSelectedPreduty(p); }}
+                          onClick={(e) => handleSelectPreduty(p, e)}
                         >
                           Lihat PDF
                         </button>

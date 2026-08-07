@@ -4,14 +4,12 @@ const { Preduty } = require('../database');
 router.get('/', async (req, res) => {
   try {
     const preduties = await Preduty.findAll({ 
-      attributes: { exclude: ['personelImage', 'trafficImage', 'weatherImage'] },
+      attributes: { exclude: ['personelImage', 'trafficImage', 'weatherImage', 'othersData', 'fasilitasData', 'notamText', 'reminderText', 'instructionText'] },
       order: [['createdAt', 'DESC']] 
     });
     const parsed = preduties.map(p => {
       const data = p.toJSON();
       if (data.managerOnDutyInfo) data.managerOnDutyInfo = JSON.parse(data.managerOnDutyInfo);
-      if (data.fasilitasData) data.fasilitasData = JSON.parse(data.fasilitasData);
-      if (data.othersData) data.othersData = JSON.parse(data.othersData);
       return data;
     });
     res.json(parsed);
@@ -54,10 +52,7 @@ router.post('/', async (req, res) => {
       instructionText,
       createdBy
     });
-    const responseData = newPreduty.toJSON();
-    if (responseData.fasilitasData) responseData.fasilitasData = JSON.parse(responseData.fasilitasData);
-    if (responseData.othersData) responseData.othersData = JSON.parse(responseData.othersData);
-    res.json({ success: true, preduty: responseData });
+    res.json({ success: true, id: newPreduty.id });
   } catch (err) {
     console.error('Error creating preduty:', err);
     res.status(500).json({ error: err.message });
