@@ -17,8 +17,9 @@ export const NotamProvider = ({ children }) => {
   const fetchNotams = async () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/notams`);
+      if (!response.ok) throw new Error('Not OK');
       const data = await response.json();
-      setNotams(data);
+      if (Array.isArray(data)) setNotams(data);
     } catch (err) {
       console.error("Error fetching notams:", err);
     }
@@ -61,7 +62,7 @@ export const NotamProvider = ({ children }) => {
   };
 
   return (
-    <NotamContext.Provider value={{ notams, addNotam, updateNotam, deleteNotam }}>
+    <NotamContext.Provider value={{ notams, addNotam, updateNotam, deleteNotam, fetchNotams }}>
       {children}
     </NotamContext.Provider>
   );

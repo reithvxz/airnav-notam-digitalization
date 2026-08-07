@@ -12,7 +12,7 @@ import PostShiftTab from './tabs/PostShiftTab';
 import PredutyTab from './tabs/PredutyTab';
 
 export default function AdminDashboard({ defaultTab = 'overview' }) {
-  const { notams, deleteNotam } = useNotams();
+  const { notams, deleteNotam, fetchNotams } = useNotams();
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -64,29 +64,33 @@ export default function AdminDashboard({ defaultTab = 'overview' }) {
   useEffect(() => {
     if (mainTab === 'briefing' || mainTab === 'overview') {
       fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/briefings`)
-        .then(r => r.json())
-        .then(data => setBriefings(Array.isArray(data) ? data : []))
-        .catch(() => setBriefings([]));
+        .then(r => r.ok ? r.json() : Promise.reject('Not OK'))
+        .then(data => { if (Array.isArray(data)) setBriefings(data); })
+        .catch(err => console.error('Failed to fetch briefings', err));
     }
     if (mainTab === 'postshift' || mainTab === 'overview') {
       fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/postshifts`)
-        .then(r => r.json())
-        .then(data => setPostshifts(Array.isArray(data) ? data : []))
-        .catch(() => setPostshifts([]));
+        .then(r => r.ok ? r.json() : Promise.reject('Not OK'))
+        .then(data => { if (Array.isArray(data)) setPostshifts(data); })
+        .catch(err => console.error('Failed to fetch postshifts', err));
     }
     if (mainTab === 'overview' || mainTab === 'preduty') {
       fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/preduties`)
-        .then(r => r.json())
-        .then(data => setPreduties(Array.isArray(data) ? data : []))
-        .catch(() => setPreduties([]));
+        .then(r => r.ok ? r.json() : Promise.reject('Not OK'))
+        .then(data => { if (Array.isArray(data)) setPreduties(data); })
+        .catch(err => console.error('Failed to fetch preduties', err));
     }
     
     // Always fetch events for the Upcoming Events widget in notam tab, or for calendar tab
     fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/events`)
-      .then(r => r.json())
-      .then(data => setEvents(Array.isArray(data) ? data : []))
-      .catch(() => setEvents([]));
-  }, [mainTab]);
+      .then(r => r.ok ? r.json() : Promise.reject('Not OK'))
+      .then(data => { if (Array.isArray(data)) setEvents(data); })
+      .catch(err => console.error('Failed to fetch events', err));
+
+    if ((mainTab === 'notam' || mainTab === 'overview') && fetchNotams) {
+      fetchNotams();
+    }
+  }, [mainTab, fetchNotams]);
 
   const handleDeleteBriefing = (id, e) => {
     e.stopPropagation();
